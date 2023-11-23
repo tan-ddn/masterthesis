@@ -1,4 +1,3 @@
-import logging
 import torch
 import numpy as np
 from torchvision.transforms.functional import crop
@@ -8,13 +7,16 @@ from transformers.models.vit.modeling_vit import ViTPatchEmbeddings, ViTEmbeddin
 from transformers.modeling_outputs import ImageClassifierOutput
 from sklearn.metrics import balanced_accuracy_score, confusion_matrix, roc_auc_score
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
-from train_model import TrainModel
+from utils.train_utils import *
+from dataset_coco18tp import coco18tp_data
+from transformers import get_cosine_schedule_with_warmup
 
 
 class linear_ViTPatchEmbeddings(ViTPatchEmbeddings):
     def __init__(self, config):
         super().__init__(config)
-        
+        self.num_patches = config.num_patches
+
         in_features = self.num_channels * self.patch_size[0] * self.patch_size[1]
         self.projection = torch.nn.Linear(in_features, config.hidden_size)
     
@@ -28,6 +30,7 @@ class linear_ViTPatchEmbeddings(ViTPatchEmbeddings):
 class conv_linear_ViTPatchEmbeddings(ViTPatchEmbeddings):
     def __init__(self, config,):
         super().__init__(config)
+        self.num_patches = config.num_patches
 
         self.projection = torch.nn.Conv2d(self.num_channels, config.hidden_size, kernel_size=self.patch_size, stride=self.patch_size)
         self.linear = torch.nn.Linear(config.hidden_size, config.hidden_size)
@@ -37,9 +40,9 @@ class conv_linear_ViTPatchEmbeddings(ViTPatchEmbeddings):
         
         embeddings = []
         for i in range(batch_size):
-            print(f'pixel value shape {pixel_values[i].shape}')
+            # print(f'pixel value shape {pixel_values[i].shape}')
             one_item_embeddings = self.projection(pixel_values[i]).flatten(1)
-            print(f'after conv2d shape {one_item_embeddings.shape}')
+            # print(f'after conv2d shape {one_item_embeddings.shape}')
             one_item_embeddings = self.linear(one_item_embeddings)
             one_item_embeddings = torch.squeeze(one_item_embeddings)  # Shape: (num_patches, hidden_size)
             embeddings.append(one_item_embeddings)
@@ -49,6 +52,7 @@ class conv_linear_ViTPatchEmbeddings(ViTPatchEmbeddings):
 class conv_cat_ViTPatchEmbeddings(ViTPatchEmbeddings):
     def __init__(self, config):
         super().__init__(config)
+        self.num_patches = config.num_patches
     
     def forward(self, pixel_values: torch.Tensor, interpolate_pos_encoding: bool = False) -> torch.Tensor:
         batch_size, num_patches, num_channels, height, width = pixel_values.shape
@@ -65,18 +69,22 @@ class conv_cat_ViTPatchEmbeddings(ViTPatchEmbeddings):
 class fixation_ViTEmbeddings(ViTEmbeddings):
     def __init__(self, config: ViTConfig, 
                  use_mask_token: bool = False,
-                 patch_embeddings_type: str = 'conv_cat') -> None:
+                 patch_embeddings_type: str = '') -> None:
         super().__init__(config, use_mask_token)
         
-        self.patch_embeddings = conv_cat_ViTPatchEmbeddings(config)
+        self.patch_embeddings_type = patch_embeddings_type
+        self.patch_embeddings = ViTPatchEmbeddings(config)
         if patch_embeddings_type == 'linear':
             self.patch_embeddings = linear_ViTPatchEmbeddings(config)
         if patch_embeddings_type == 'conv_linear':
             self.patch_embeddings = conv_linear_ViTPatchEmbeddings(config)
-        num_patches = config.num_patches
-        self.position_embeddings = torch.nn.Parameter(
-            torch.randn(1, num_patches + 1, config.hidden_size)
-        )
+        if patch_embeddings_type == 'conv_cat':
+            self.patch_embeddings = conv_cat_ViTPatchEmbeddings(config)
+        if patch_embeddings_type != '':
+            num_patches = self.patch_embeddings.num_patches
+            self.position_embeddings = torch.nn.Parameter(
+                torch.randn(1, num_patches + 1, config.hidden_size)
+            )
 
     def forward(
         self,
@@ -84,7 +92,10 @@ class fixation_ViTEmbeddings(ViTEmbeddings):
         bool_masked_pos: Optional[torch.BoolTensor] = None,
         interpolate_pos_encoding: bool = False,
     ) -> torch.Tensor:
-        batch_size, num_fixations, num_channels, height, width = pixel_values.shape
+        if self.patch_embeddings_type == '':
+            batch_size, num_channels, height, width = pixel_values.shape
+        else:
+            batch_size, num_fixations, num_channels, height, width = pixel_values.shape
         embeddings = self.patch_embeddings(pixel_values, interpolate_pos_encoding=interpolate_pos_encoding,)
 
         if bool_masked_pos is not None:
@@ -115,7 +126,7 @@ class fixation_ViT(ViTModel, torch.nn.Module):
     def __init__(self, config: ViTConfig, 
                  add_pooling_layer: bool = True,
                  use_mask_token: bool = False,
-                 patch_embeddings_type: str = 'conv_cat',
+                 patch_embeddings_type: str = '',
                  **kwargs) -> None:
         super().__init__(config, 
                          add_pooling_layer=add_pooling_layer, 
@@ -226,25 +237,101 @@ class fixation_ViT(ViTModel, torch.nn.Module):
             attentions=outputs.attentions,
         )
 
-def main():
-    LR = 1e-6
+def coco18tp():
     WEIGHT_DECAY = 0.05
     WARMUP_STEPS = 7000
     LR_S = None  # 'CosineWarmupScheduler' or 'WarmupScheduler'
 
-    training = TrainModel(modelClass = fixation_ViT,
-                          train_bs = 32, val_test_bs = 64,)
+    defaultValues = TRAIN_CONST
+    defaultValues['lr'] = 1e-7
+    defaultValues['train_batch_size'] = 256
+    defaultValues['val_batch_size'] = 512
+    args = set_args_from_cli(defaultValues)
+    
     configuration = ViTConfig(
-        num_channels = training.args.channels,
-        num_labels = training.args.classes,
-        num_patches = training.max_fix_length,
+        num_channels = args.num_channel,
+        num_labels = args.num_class,
+        num_patches = defaultValues['max_fix_length'],
     )
-    training.run(
+    model = fixation_ViT(
         config = configuration,
-        patch_embeddings_type = 'conv_cat',  # conv_cat, linear, or conv_linear
-        lr = LR, weight_decay = WEIGHT_DECAY, 
-        warmup = WARMUP_STEPS, lr_s = LR_S,
+        patch_embeddings_type = 'conv_cat',  # '', conv_cat, linear, or conv_linear
+    )
+    trainloader, valloader, dataset_sizes = coco18tp_data(args, defaultValues)
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr = args.lr, 
+        weight_decay = WEIGHT_DECAY, 
+    )
+    num_training_steps = args.max_epochs * len(trainloader)
+    lr_scheduler = get_cosine_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=WARMUP_STEPS,
+        num_training_steps=num_training_steps,
+    )
+    
+    training = TrainHuggingFace(
+        args, model, loss_fn, optimizer,lr_scheduler,
+        trainloader, valloader, dataset_sizes, 
+        defaultValues['result_dir'],
+    )
+    training.train_model()
+
+def pretrained_and_imagenet():
+    import torchvision.transforms as transforms 
+    from datasets import load_dataset
+    from transformers import AutoImageProcessor
+    from tqdm.auto import tqdm
+    from dataset_imagenet import ImageNetData
+
+    WEIGHT_DECAY = 0.05
+    WARMUP_STEPS = 7000
+    LR_S = None  # 'CosineWarmupScheduler' or 'WarmupScheduler'
+
+    defaultValues = TRAIN_CONST
+    defaultValues['num_class'] = 1000
+    defaultValues['num_channel'] = 3
+    defaultValues['lr'] = 1e-5
+    defaultValues['train_batch_size'] = 256
+    defaultValues['val_batch_size'] = 512
+    defaultValues['data_dir'] = r'/images/PublicDatasets/imagenet'
+    args = set_args_from_cli(defaultValues)
+    
+    model = fixation_ViT.from_pretrained(
+        "masterthesis/huggingface/vit-base-patch16-224",
+        num_labels = args.num_class,
+        patch_embeddings_type = '',  # '', conv_cat, linear, or conv_linear
     )
 
+    dataloaders, dataset_sizes = ImageNetData(
+        args.data_dir, 
+        args.data_limit,
+        return_dataset=False
+    )
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr = args.lr, 
+        weight_decay = WEIGHT_DECAY, 
+    )
+    num_training_steps = args.max_epochs * len(dataloaders['train'])
+    lr_scheduler = get_cosine_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=WARMUP_STEPS,
+        num_training_steps=num_training_steps,
+    )
+
+    training = TrainHuggingFace(
+        args, model, loss_fn, optimizer,lr_scheduler,
+        dataloaders['train'], dataloaders['val'], dataset_sizes, 
+        defaultValues['result_dir'],
+    )
+    training.train_model()
+
+
 if __name__ == "__main__":
-    main()
+    coco18tp()
+    # pretrained_and_imagenet()

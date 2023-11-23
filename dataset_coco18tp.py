@@ -1,12 +1,58 @@
+import json
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import torchvision.io as tv_io
 from pathlib import Path
 
-TRAIN_LABEL_FILE = r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_train_split1.json'
-VAL_LABEL_FILE = r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_validation_split1.json'
-IMAGE_DIR = r'/work/scratch/tnguyen/images/innoretvision/cocosearch/coco_search18_images_TP/'
+COCO_TP_TRAIN_LABEL_FILE = r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_train_split1.json'
+COCO_TP_VAL_LABEL_FILE = r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_validation_split1.json'
+COCO_TP_IMAGE_DIR = r'/work/scratch/tnguyen/images/innoretvision/cocosearch/coco_search18_images_TP/'
+
+def read_data(file_path):
+    with open(file_path) as file:
+        data = json.load(file)
+    return data
+
+def coco18tp_data(args, defaultValues):
+    train_data = read_data(defaultValues['train_label_file'])
+    train_data = train_data[0: args.data_limit]
+    train_dataset = FixationDataset(
+        data=train_data,
+        image_dir=defaultValues['image_dir'],
+        max_fix_length=defaultValues['max_fix_length'],
+        channels=args.num_channel,
+        patch_size=defaultValues['patch_size'],
+    )  
+    val_data = read_data(defaultValues['val_label_file'])
+    val_data = val_data[0: args.data_limit]
+    val_dataset = FixationDataset(
+        data=val_data,
+        image_dir=defaultValues['image_dir'],
+        max_fix_length=defaultValues['max_fix_length'],
+        channels=args.num_channel,
+        patch_size=defaultValues['patch_size'],
+    )  
+    trainloader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=args.train_batch_size,
+        shuffle=True,
+        pin_memory=False,
+        # num_workers=8,
+    )
+    valloader = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size=args.val_batch_size,
+        shuffle=True,
+        pin_memory=False,
+        # num_workers=8,
+    )
+    dataset_sizes = {
+        'train': len(train_dataset),
+        'val': len(val_dataset),
+    }
+    return trainloader, valloader, dataset_sizes
+
 
 class FixationDataset(torch.utils.data.Dataset):
     def __init__(self, data : None,
@@ -80,3 +126,25 @@ class FixationDataset(torch.utils.data.Dataset):
     #     # return fixations, label
     #     return img, fixation_locations, label
     
+if __name__ == "__main__":
+    image_dir = r'/work/scratch/tnguyen/images/cocosearch/patches/'
+    train_data = read_data(COCO_TP_TRAIN_LABEL_FILE)
+    
+    '''Count fixations for each task'''
+    fixation_counts = {
+        "bottle": 0, "bowl": 0, "car": 0, "chair": 0, "clock": 0, "cup": 0,
+        "fork": 0, "keyboard": 0, "knife": 0, "laptop": 0, "microwave": 0, "mouse": 0,
+        "oven": 0, "potted plant": 0, "sink": 0, "stop sign": 0, "toilet": 0, "tv": 0,
+    }
+    image_counts = {
+        "bottle": 0, "bowl": 0, "car": 0, "chair": 0, "clock": 0, "cup": 0,
+        "fork": 0, "keyboard": 0, "knife": 0, "laptop": 0, "microwave": 0, "mouse": 0,
+        "oven": 0, "potted plant": 0, "sink": 0, "stop sign": 0, "toilet": 0, "tv": 0,
+    }
+    for datum in train_data:
+        label = datum['task']
+        num_fixations = len(datum['X'])
+        fixation_counts[label] += int(num_fixations)
+        image_counts[label] += 1
+    print(f'fixation count: {fixation_counts}')
+    print(f'image count: {image_counts}')

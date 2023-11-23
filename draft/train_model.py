@@ -28,16 +28,17 @@ CONST = {
 }
 
 class TrainModel:
-    def __init__(self, modelClass : Type[torch.nn.Module],
-                 **kwargs):
+    def __init__(self, **kwargs):
         self.result_dir = CONST["result_dir"]
         self.channels = CONST["channels"]
         self.patch_size = CONST["patch_size"]
         self.max_fix_length = CONST["max_fix_length"]
         self.__dict__.update(kwargs)
-        self.modelClass = modelClass
+        self.train_dataset = None
+        self.val_dataset = None
 
         self.device, self.device_name, self.accelerator, self.num_devices = check_device()
+        # self.device = 'cpu'
 
         self.args = set_args_from_cli()
         self.args.channels = int(self.args.channels)
@@ -47,9 +48,9 @@ class TrainModel:
         self.args.max_epochs = int(self.args.max_epochs)
 
     def set_output_dir(self):
-        if self.modelClass is None:
+        if self.model is None:
             raise ValueError("Model must not be None")
-        self.output_dir = self.result_dir + self.modelClass.__name__ + '/'
+        self.output_dir = self.result_dir + self.model.__class__.__name__ + '/'
 
     def set_logging(self, log_filename="log_" + str(int(time.time()))):
         self.log_filename = log_filename
@@ -107,35 +108,42 @@ class TrainModel:
         self.train_logger.info(f"CLI args: {self.args}")
 
         """Get dataset"""
-        train_data = self.read_data(CONST['train_label_file'])
-        val_data = self.read_data(CONST['val_label_file']) 
-        train_dataset = FixationDataset(
-            data=train_data,
-            image_dir=CONST['image_dir'],
-            max_fix_length=self.max_fix_length,
-            channels=self.channels,
-            patch_size=self.patch_size,
-            device=self.device,
-        )  
-        val_dataset = FixationDataset(
-            data=val_data,
-            image_dir=CONST['image_dir'],
-            max_fix_length=self.max_fix_length,
-            channels=self.channels,
-            patch_size=self.patch_size,
-            device=self.device,
-        )
+        if self.train_dataset is None:
+            train_data = self.read_data(CONST['train_label_file'])
+            train_dataset = FixationDataset(
+                data=train_data,
+                image_dir=CONST['image_dir'],
+                max_fix_length=self.max_fix_length,
+                channels=self.channels,
+                patch_size=self.patch_size,
+                device=self.device,
+            )  
+        else:
+            train_dataset = self.train_dataset
+        if self.val_dataset is None:
+            val_data = self.read_data(CONST['val_label_file']) 
+            val_dataset = FixationDataset(
+                data=val_data,
+                image_dir=CONST['image_dir'],
+                max_fix_length=self.max_fix_length,
+                channels=self.channels,
+                patch_size=self.patch_size,
+                device=self.device,
+            )
+        else:
+            val_dataset = self.val_dataset
+
         self.trainloader = torch.utils.data.DataLoader(
             train_dataset,
             batch_size=self.train_bs,
-            shuffle=False,
+            shuffle=True,
             pin_memory=False,
             # num_workers=8,
         )
         self.valloader = torch.utils.data.DataLoader(
             val_dataset,
             batch_size=self.val_test_bs,
-            shuffle=False,
+            shuffle=True,
             pin_memory=False,
             # num_workers=8,
         )
@@ -281,12 +289,10 @@ class TrainModel:
     #     # self.trainer.test(ckpt_path=ckpt_path)
     #     self.trainer.test(model=self.model, datamodule=self.dataset)
 
-    def run(self, **kwargs):
-        self.setup_training()
+    def run(self, model : Type[torch.nn.Module] = None, **kwargs):
+        self.model = model
 
-        self.model = self.modelClass(
-            **kwargs
-        )
+        self.setup_training()
         self.model.to(self.device)
         # if num_gpus > 1:
         #     self.model = Pipe(self.model.sequence, chunks=4)
