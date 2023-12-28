@@ -3,7 +3,7 @@ import glob
 import json
 import numpy as np
 from pathlib import Path
-from typing import Self
+from typing_extensions import Self
 from PIL import Image, ImageOps
 # from skimage.transform import downscale_local_mean
 # from skimage.color import rgb2gray
@@ -14,12 +14,16 @@ val_label_file1 = r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coc
 # label_file2 = r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_train_split2.json'
 
 class ImageFile:
-    def __init__(self, image_path : str) -> None:
+    def __init__(self, image_path : str, img : Image = None) -> None:
         self._image_path = image_path
         self._image_dir, self._image_name = os.path.split(image_path)
-        # self._org_image = imread(image_path)
-        self._org_image = Image.open(image_path)
-        self._image = self._org_image
+        if img is None:
+            # self._org_image = imread(image_path)
+            self._org_image = Image.open(image_path)
+            self._image = self._org_image
+        else:
+            self._org_image = img
+            self._image = self._org_image
 
     def org_image(self) -> np:
         return self._org_image
@@ -36,6 +40,10 @@ class ImageFile:
     def image_shape(self) -> tuple:
         img = np.array(self._image)
         return img.shape
+    
+    def resize(self, size : tuple) -> Self:
+        self._image = self._image.resize(size)
+        return self
 
     # def down_sampling(self, factors : tuple) -> Self:
         # self._image = downscale_local_mean(self._image, factors).astype('uint8')
@@ -71,10 +79,35 @@ class ImageFile:
         img_crop = self._image.crop(box)
         return img_crop
     
+    def fixation_frame(self, x : int, y : int,
+                       margin_x : int, margin_y : int,
+                       patch_size_x : int, patch_size_y : int,
+                       image_size : tuple,) -> tuple:
+        left = x + margin_x
+        upper = y + margin_y
+        right = left + patch_size_x
+        bottom = upper + patch_size_y
+        if left < 0:
+            left = 0
+            right = patch_size_x
+        if upper < 0:
+            upper = 0
+            bottom = patch_size_y
+        if right > image_size[0]:
+            left = image_size[0] - patch_size_x
+            right = image_size[0]
+        if bottom > image_size[1]:
+            upper = image_size[1] - patch_size_y
+            bottom = image_size[1]
+        # print((left, upper, right, bottom))
+        return (left, upper, right, bottom)
+    
     def to_fixations(self,
-                        X : np.array,
-                        Y : np.array,
-                        patch_size : int | tuple,) -> list:
+                        patch_size : int | tuple,
+                        image_size : tuple,
+                        coordinates : list = None,
+                        X : np.array = None,
+                        Y : np.array = None,) -> list:
         if type(patch_size) is tuple:
             patch_size_x = patch_size[0]
             patch_size_y = patch_size[1]
@@ -84,12 +117,13 @@ class ImageFile:
             patch_size_x = patch_size_y = patch_size
             margin_x = margin_y = - patch_size_x // 2
         fixations = []
-        for i, (x, y) in enumerate(zip(X, Y)):
-            left = x + margin_x
-            upper = y + margin_y
-            right = left + patch_size_x
-            bottom = upper + patch_size_y
-            img_crop = self.crop_image((left, upper, right, bottom))
+        if coordinates is None:
+            coordinates = zip(X, Y)
+        for i, (x, y) in enumerate(coordinates):
+            frame = self.fixation_frame(
+                x, y, margin_x, margin_y, patch_size_x, patch_size_y, image_size,
+            )
+            img_crop = self.crop_image(frame)
             fixations.append(img_crop)
         return fixations
     

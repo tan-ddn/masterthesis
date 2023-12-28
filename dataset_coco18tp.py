@@ -23,6 +23,7 @@ def coco18tp_data(args, defaultValues):
         max_fix_length=defaultValues['max_fix_length'],
         channels=args.num_channel,
         patch_size=defaultValues['patch_size'],
+        device=args.device,
     )  
     val_data = read_data(defaultValues['val_label_file'])
     val_data = val_data[0: args.data_limit]
@@ -32,6 +33,7 @@ def coco18tp_data(args, defaultValues):
         max_fix_length=defaultValues['max_fix_length'],
         channels=args.num_channel,
         patch_size=defaultValues['patch_size'],
+        device=args.device,
     )  
     trainloader = torch.utils.data.DataLoader(
         train_dataset,
@@ -60,7 +62,7 @@ class FixationDataset(torch.utils.data.Dataset):
                  max_fix_length : int,
                  channels : int,
                  patch_size : tuple,
-                 device : str, ):
+                 device : str = 'cpu', ):
         super().__init__()
         self.data = data
         self.image_dir = image_dir
