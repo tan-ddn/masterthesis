@@ -23,7 +23,9 @@
 cmd = /home/students/tnguyen/masterthesis/scripts/train_deit_imnetfix.sh
 
 # command line arguments
-args = --model deit_small_distilled_patch16_224 --batch-size 2048 --data-path /work/scratch/tnguyen/images/imagenet/patches --data-set IMNET --input-size 160 --output_dir /work/scratch/tnguyen/logs/deit_imnetfix/5 --finetune /home/students/tnguyen/masterthesis/deit/deit_small_distilled_patch16_224-649709d9.pth --lr 1e-5 --warmup-lr 1e-8 --min-lr 1e-9 --weight-decay 1e-8 --epochs 50 --mixup 0 --cutmix 0 --distributed --world_size 4 --num_workers 16
+args = --model deit_small_distilled_patch16_224 --batch-size 256 --data-path /work/scratch/tnguyen/images/imagenet/patches --data-set IMNET160G --input-size 160 --output_dir /work/scratch/tnguyen/logs/deit_imnetfix/9 --finetune /home/students/tnguyen/masterthesis/deit/deit_small_distilled_patch16_224-649709d9.pth --no-pos-embed --lr 1e-5 --warmup-lr 1e-8 --min-lr 1e-9 --weight-decay 1e-8 --epochs 50 --mixup 0 --cutmix 0 --distributed --world_size 4 --num_workers 16
+
+# args = --model deit_small_distilled_patch16_224 --batch-size 2048 --data-path /work/scratch/tnguyen/images/imagenet/patches --data-set IMNETFIX  --output_dir /work/scratch/tnguyen/logs/deit_imnetfix/8 --finetune /home/students/tnguyen/masterthesis/deit/deit_small_distilled_patch16_224-649709d9.pth --no-pos-embed --lr 1e-5 --warmup-lr 1e-8 --min-lr 1e-9 --weight-decay 1e-8 --epochs 50 --mixup 0 --cutmix 0 --distributed --world_size 4 --num_workers 16
 
 # start directory
 initialdir = /home/students/tnguyen/masterthesis
@@ -82,7 +84,8 @@ nice_user = True
 requirements = (GPURAM > 10000) && TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
 # requirements = (GPURAM > 10000) && (GPURAM < 20000) && POOL =="workstation"
 # requirements = TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
-requirements = TARGET.Machine=="kepler.lfb.rwth-aachen.de"
+# requirements = TARGET.Machine=="kepler.lfb.rwth-aachen.de"
+requirements = GPUs_Capability <= 7.5
 
 
 # required number of CPU cores
@@ -92,7 +95,7 @@ request_cpus = 1
 request_gpus = 4
 
 # required CPU RAM
-request_memory = 88 GB
+request_memory = 200 GB
 
 # required Disk space
 

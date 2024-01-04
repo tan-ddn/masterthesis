@@ -82,7 +82,8 @@ nice_user = False
 requirements = (GPURAM > 10000) && TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
 # requirements = (GPURAM > 10000) && (GPURAM < 20000) && POOL =="workstation"
 # requirements = TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
-requirements = TARGET.Machine=="maxwell.lfb.rwth-aachen.de"
+# requirements = TARGET.Machine=="maxwell.lfb.rwth-aachen.de"
+requirements = GPUs_Capability < 7.5
 
 
 # required number of CPU cores
