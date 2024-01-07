@@ -187,6 +187,8 @@ if __name__ == '__main__':
     #     print(f"Provided image path {args.image_path} is non valid.")
     #     sys.exit(1)
 
+    print(f'patch_size {args.patch_size}')
+    print(f'image_size {args.image_size}')
     files = glob.glob(os.path.join(args.image_path, "train/*/*.jpg"))  # 1281167
     if args.image_path == '/images/PublicDatasets/imagenet_shared/':
         files = glob.glob(os.path.join(args.image_path, "val/*/*"))  # 50000
@@ -283,15 +285,16 @@ if __name__ == '__main__':
             reserved_coordinates = []
             patch_centers = []
             for (x, y) in coordinates:
-                if len(patch_centers) > 9:
+                # if len(patch_centers) > 9:
+                if len(patch_centers) > 49:
                     break
                 search_coord = None
                 search_coord = next((i for i, c in enumerate(reserved_coordinates) if c[0] == x and c[1] == y), None)
                 if search_coord is None:
                     patch_centers.append((x, y))
                     # block the coordinate and the surrounding coordinates as well
-                    for m in range(-5, 5):
-                        for n in range(-5, 5):
+                    for m in range(-3, 3):
+                        for n in range(-3, 3):
                             neighbor_coords = (x + m, y + n)
                             reserved_coordinates.append(neighbor_coords)              
 
@@ -309,7 +312,7 @@ if __name__ == '__main__':
         image_dir = image_dir.split('/')
         image_dir = image_dir[-2:]
         image_name = image_name.split('.')
-        saved_dir = args.output_dir + image_dir[0] + '/' + image_dir[1] + '/'
+        saved_dir = args.output_dir + image_dir[0] + '_50/' + image_dir[1] + '/'
         os.makedirs(saved_dir, exist_ok=True)
 
         # save attentions heatmaps
@@ -332,22 +335,22 @@ if __name__ == '__main__':
             # print(f'th_attn {th_attn}')
             display_instances(image, th_attn[0], fname=os.path.join(saved_dir, image_name[0] + "mask_th" + str(args.threshold) + "_head" +".png"), blur=False)
 
-        """Downsampling image to 48x48 and perform grayscale"""
+        """Downsampling image to 160x160 and perform grayscale"""
         image_obj = ImageFile(image_file)
-        image_obj.resize(args.image_size)
+        image_obj.resize((160, 160))
         image_obj.to_grayscale()
         # image_obj.save_image(saved_dir)
         fixations = image_obj.to_fixations(
-            patch_size=(48, 48),
-            image_size=args.image_size,
+            patch_size=(16, 16),
+            image_size=(160, 160),
             coordinates=patch_centers,
         )
         transform = pth_transforms.Compose([
-            pth_transforms.Resize((16, 16)),
+            # pth_transforms.Resize((16, 16)),
             pth_transforms.ToTensor(),
             pth_transforms.Normalize((0.5), (0.5)),
         ])
-        fixations_tensor = torch.zeros((len(fixations), 1, 16, 16))
+        fixations_tensor = torch.zeros((len(fixations), 1, 16, 16))  # 10 , 1, 16, 16
         for i, fixation in enumerate(fixations):
             # fixation_name = image_name[0] + '_' + str(i) + '.' + image_name[1]
             # fixation_path = saved_dir + fixation_name
@@ -358,7 +361,9 @@ if __name__ == '__main__':
             # fixation_resized.save(saved_dir + fixation_resized_name)
             fixation = transform(fixation)
             fixations_tensor[i] = fixation
-            torch.save(fixations_tensor, saved_dir + image_name[0] + f'_16x16.pt')
+        fixations_tensor.cpu().detach().numpy()
+        np.save(saved_dir + image_name[0] + f'_16x16.npy', fixations_tensor)
+        # torch.save(fixations_tensor, saved_dir + image_name[0] + f'_16x16.pt')
         # saved_fixations = torch.load(saved_dir + image_name[0] + f'_16x16.pt')
         # print(f'saved_fixations shape {saved_fixations.shape}')
 

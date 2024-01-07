@@ -25,9 +25,8 @@ class linear_ViTPatchEmbeddings(nn.Module):
         in_features = patch_size[0] * patch_size[1]
         self.projection = nn.Linear(in_features, embed_dim)
     
-    def forward(self, pixel_values: torch.Tensor, interpolate_pos_encoding: bool = False) -> torch.Tensor:
-        batch_size, num_patches, num_channels, height, width = pixel_values.shape
-        
+    def forward(self, pixel_values: torch.Tensor, interpolate_pos_encoding: bool = False) -> torch.Tensor:    
+        pixel_values = pixel_values[:, :self.num_patches, :, :, :] 
         pixel_values = pixel_values.flatten(2)
         embeddings = self.projection(pixel_values)  # Shape: (batch_size, num_patches, hidden_size)
         return embeddings

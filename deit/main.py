@@ -278,10 +278,10 @@ def main(args):
         # # args.train_batch_size = args.batch_size
         # # args.val_batch_size = args.batch_size * 2
         defaultValues = {
-            'train_root': r'/images/PublicDatasets/imagenet/train/',
-            'val_root': r'/images/PublicDatasets/imagenet_shared/val/',
-            'image_dir': r'/work/scratch/tnguyen/images/imagenet/patches/',
-            'max_fix_length': 10,
+            'train_root': r'/images/innoretvision/eye/imagenet_patch/train_50/',
+            'val_root': r'/images/innoretvision/eye/imagenet_patch/val_50/',
+            'image_dir': r'/images/innoretvision/eye/imagenet_patch/',
+            'max_fix_length': 50,
             'patch_size': (16, 16),
         }
         # # data_loader_train, data_loader_val, dataset_sizes = imagenetfix_data(args, defaultValues)
@@ -300,6 +300,7 @@ def main(args):
         with open(dataset_val_file, 'rb') as handle:
             dataset_val = pickle.load(handle)
         # print(f'dataset_val {dataset_val}')
+        print(f'one sample data shape {dataset_val[0][0].shape}')
     elif args.data_set == 'COCO18TP':
         args.nb_classes = 18
         args.num_channel = 1
@@ -471,7 +472,18 @@ def main(args):
             model.pos_embed.requires_grad = False
         except:
             print('no position encoding')
-            
+
+    if args.distillation_type == 'none':
+        try:
+            model.head_dist.weight.requires_grad = False
+            model.head_dist.bias.requires_grad = False
+        except:
+            print('no head_dist')
+    
+    # print(f'model params')
+    # for name_p,p in model.named_parameters():
+    #     print(f'{name_p}: {p}')
+
     model.to(device)
 
     model_ema = None
@@ -485,7 +497,7 @@ def main(args):
 
     model_without_ddp = model
     if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=False)
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
@@ -536,6 +548,9 @@ def main(args):
     )
 
     output_dir = Path(args.output_dir)
+    checkpoint_file = Path(args.output_dir+"/checkpoint.pth")
+    if checkpoint_file.is_file():
+        args.resume = checkpoint_file
     if args.resume:
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(

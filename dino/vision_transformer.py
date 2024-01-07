@@ -21,8 +21,8 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-# from dino.utils import trunc_normal_
-from utils import trunc_normal_
+from dino.utils import trunc_normal_
+# from utils import trunc_normal_
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -156,10 +156,10 @@ class VisionTransformer(nn.Module):
         super().__init__()
         self.num_features = self.embed_dim = embed_dim
 
-        # self.patch_embed = PatchEmbed(
-        #     img_size=img_size[0], patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
-        self.patch_embed = linear_ViTPatchEmbeddings(
-            patch_size=patch_size, embed_dim=embed_dim)
+        self.patch_embed = PatchEmbed(
+            img_size=img_size[0], patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+        # self.patch_embed = linear_ViTPatchEmbeddings(
+        #     patch_size=patch_size, embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
@@ -213,8 +213,8 @@ class VisionTransformer(nn.Module):
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1)
 
     def prepare_tokens(self, x):
-        # B, nc, w, h = x.shape
-        B, np, nc, w, h = x.shape
+        B, nc, w, h = x.shape
+        # B, np, nc, w, h = x.shape
         x = self.patch_embed(x)  # patch linear embedding
 
         # add the [CLS] token to the embed patch tokens

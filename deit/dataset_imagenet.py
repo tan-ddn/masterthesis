@@ -5,6 +5,7 @@ import torchvision.io as tv_io
 import scipy.io as scio
 import cv2
 import pickle
+import numpy as np
 from PIL import Image
 from torchvision import transforms, datasets
 from tqdm.auto import tqdm
@@ -237,7 +238,8 @@ class ImagenetFixationDataset(torchvision.datasets.DatasetFolder):
         #     fixations[i] = patch
         #     # fixations.append(patch)
         # # fixations = torch.stack(fixations, dim=0).to(self.device)
-        saved_fixations = torch.load(path)
+        # saved_fixations = torch.load(path)
+        saved_fixations = np.load(path)
         return saved_fixations, target
         # fixations = saved_fixations[:self.max_fix_length]
         return fixations, target
@@ -246,53 +248,53 @@ class ImagenetFixationDataset(torchvision.datasets.DatasetFolder):
 if __name__ == '__main__':
     """Create dataset with fixations"""
     defaultValues = {
-        'train_root': r'/images/PublicDatasets/imagenet/train/',
-        'val_root': r'/images/PublicDatasets/imagenet_shared/val/',
-        'image_dir': r'/work/scratch/tnguyen/images/imagenet/patches/',
-        'max_fix_length': 10,
+        'train_root': r'/images/innoretvision/eye/imagenet_patch/train_50/',
+        'val_root': r'/images/innoretvision/eye/imagenet_patch/val_50/',
+        'image_dir': r'/images/innoretvision/eye/imagenet_patch/',
+        'max_fix_length': 50,
         'patch_size': (16, 16),
     }
-    # train_dataset = ImagenetFixationDataset(
-    #     # root=defaultValues['train_root'],
-    #     root=defaultValues['image_dir']+'train/',
-    #     extensions=(".pt"),
-    #     patch_dir=defaultValues['image_dir']+'train/',
-    #     max_fix_length=defaultValues['max_fix_length'],
-    #     channels=1,
-    #     patch_size=defaultValues['patch_size'],
-    # )
-    # val_dataset = ImagenetFixationDataset(
-    #     # root=defaultValues['val_root'],
-    #     root=defaultValues['image_dir']+'val/',
-    #     extensions=(".pt"),
-    #     patch_dir=defaultValues['image_dir']+'val/',
-    #     max_fix_length=defaultValues['max_fix_length'],
-    #     channels=1,
-    #     patch_size=defaultValues['patch_size'],
-    # )  
+    train_dataset = ImagenetFixationDataset(
+        # root=defaultValues['train_root'],
+        root=defaultValues['image_dir']+'train_50/',
+        extensions=(".npy"),
+        patch_dir=defaultValues['image_dir']+'train_50/',
+        max_fix_length=defaultValues['max_fix_length'],
+        channels=1,
+        patch_size=defaultValues['patch_size'],
+    )
+    val_dataset = ImagenetFixationDataset(
+        # root=defaultValues['val_root'],
+        root=defaultValues['image_dir']+'val_50/',
+        extensions=(".npy"),
+        patch_dir=defaultValues['image_dir']+'val_50/',
+        max_fix_length=defaultValues['max_fix_length'],
+        channels=1,
+        patch_size=defaultValues['patch_size'],
+    )  
     dataset_train_file = defaultValues['image_dir'] + 'dataset_train.pickle'
-    # with open(dataset_train_file, 'wb') as handle:
-    #     pickle.dump(train_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    dataset_val_file = defaultValues['image_dir'] + 'dataset_val.pickle'
-    # with open(dataset_val_file, 'wb') as handle:
-    #     pickle.dump(val_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    """Create dataset with image size: 160x160x3"""
-    transform = pth_transforms.Compose([
-        pth_transforms.Resize((160, 160)),
-        pth_transforms.ToTensor(),
-        pth_transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD)
-    ])
-    train_root = r'/images/PublicDatasets/imagenet/train/'
-    train_dataset = torchvision.datasets.ImageFolder(train_root, transform=transform)
-    dataset_train_file = defaultValues['image_dir'] + 'dataset_train_160.pickle'
     with open(dataset_train_file, 'wb') as handle:
         pickle.dump(train_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    val_root = r'/images/PublicDatasets/imagenet_shared/val/'
-    val_dataset = torchvision.datasets.ImageFolder(val_root, transform=transform)
-    dataset_val_file = defaultValues['image_dir'] + 'dataset_val_160.pickle'
+    dataset_val_file = defaultValues['image_dir'] + 'dataset_val.pickle'
     with open(dataset_val_file, 'wb') as handle:
         pickle.dump(val_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # """Create dataset with image size: 160x160x3"""
+    # transform = pth_transforms.Compose([
+    #     pth_transforms.Resize((160, 160)),
+    #     pth_transforms.ToTensor(),
+    #     pth_transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD)
+    # ])
+    # train_root = r'/images/PublicDatasets/imagenet/train/'
+    # train_dataset = torchvision.datasets.ImageFolder(train_root, transform=transform)
+    # dataset_train_file = defaultValues['image_dir'] + 'dataset_train_160.pickle'
+    # with open(dataset_train_file, 'wb') as handle:
+    #     pickle.dump(train_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # val_root = r'/images/PublicDatasets/imagenet_shared/val/'
+    # val_dataset = torchvision.datasets.ImageFolder(val_root, transform=transform)
+    # dataset_val_file = defaultValues['image_dir'] + 'dataset_val_160.pickle'
+    # with open(dataset_val_file, 'wb') as handle:
+    #     pickle.dump(val_dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # """Create dataset with image size: 160x160x1"""
     # transform = pth_transforms.Compose([
