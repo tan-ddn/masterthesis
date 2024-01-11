@@ -68,7 +68,7 @@ class Solarization(object):
             return img
 
 
-def load_pretrained_weights(model, pretrained_weights, checkpoint_key, model_name, patch_size):
+def load_pretrained_weights(model, pretrained_weights, checkpoint_key, model_name, patch_size, num_fix):
     if os.path.isfile(pretrained_weights):
         state_dict = torch.load(pretrained_weights, map_location="cpu")
         if checkpoint_key is not None and checkpoint_key in state_dict:
@@ -85,7 +85,7 @@ def load_pretrained_weights(model, pretrained_weights, checkpoint_key, model_nam
         # interpolate to new num_patches 
         pos_tokens = pos_tokens.permute(0, 2, 1)
         pos_tokens = torch.nn.functional.interpolate(
-            pos_tokens, size=10, mode='linear', align_corners=False)
+            pos_tokens, size=num_fix, mode='linear', align_corners=False)
         pos_tokens = pos_tokens.permute(0, 2, 1)
         
         new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)

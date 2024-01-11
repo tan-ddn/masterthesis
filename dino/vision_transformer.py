@@ -21,8 +21,8 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from dino.utils import trunc_normal_
-# from utils import trunc_normal_
+# from dino.utils import trunc_normal_
+from utils import trunc_normal_
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -133,15 +133,15 @@ class PatchEmbed(nn.Module):
 
 
 class linear_ViTPatchEmbeddings(nn.Module):
-    def __init__(self, patch_size, embed_dim):
+    def __init__(self, patch_size, embed_dim, num_patches):
         super().__init__()
-        self.num_patches = 10
+        self.num_patches = num_patches
 
         in_features = patch_size * patch_size
         self.projection = nn.Linear(in_features, embed_dim)
     
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
-        batch_size, num_patches, num_channels, height, width = pixel_values.shape
+        # batch_size, num_patches, num_channels, height, width = pixel_values.shape
         
         pixel_values = pixel_values.flatten(2)
         embeddings = self.projection(pixel_values)  # Shape: (batch_size, num_patches, hidden_size)
@@ -152,14 +152,17 @@ class VisionTransformer(nn.Module):
     """ Vision Transformer """
     def __init__(self, img_size=[224], patch_size=16, in_chans=3, num_classes=0, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
-                 drop_path_rate=0., norm_layer=nn.LayerNorm, **kwargs):
+                 drop_path_rate=0., norm_layer=nn.LayerNorm, num_patches=None, no_pos_embed=False, **kwargs):
         super().__init__()
         self.num_features = self.embed_dim = embed_dim
-
-        self.patch_embed = PatchEmbed(
-            img_size=img_size[0], patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
-        # self.patch_embed = linear_ViTPatchEmbeddings(
-        #     patch_size=patch_size, embed_dim=embed_dim)
+        self.num_patches = num_patches
+        self.no_pos_embed = no_pos_embed
+        if self.num_patches is None:
+            self.patch_embed = PatchEmbed(
+                img_size=img_size[0], patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+        else:
+            self.patch_embed = linear_ViTPatchEmbeddings(
+                patch_size=patch_size, embed_dim=embed_dim, num_patches=num_patches)
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
@@ -213,8 +216,10 @@ class VisionTransformer(nn.Module):
         return torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed), dim=1)
 
     def prepare_tokens(self, x):
-        B, nc, w, h = x.shape
-        # B, np, nc, w, h = x.shape
+        if self.num_patches is None:
+            B, nc, w, h = x.shape
+        else:
+            B, np, nc, w, h = x.shape
         x = self.patch_embed(x)  # patch linear embedding
 
         # add the [CLS] token to the embed patch tokens
@@ -222,7 +227,8 @@ class VisionTransformer(nn.Module):
         x = torch.cat((cls_tokens, x), dim=1)
 
         # add positional encoding to each token
-        x = x + self.interpolate_pos_encoding(x, w, h)
+        if self.no_pos_embed == False:
+            x = x + self.interpolate_pos_encoding(x, w, h)
 
         return self.pos_drop(x)
 

@@ -38,8 +38,12 @@ def eval_linear(args):
 
     # ============ building network ... ============
     # if the network is a Vision Transformer (i.e. vit_tiny, vit_small, vit_base)
+    if args.no_pos_embed:
+        no_pos_embed = True
+    else:
+        no_pos_embed = False
     if args.arch in vits.__dict__.keys():
-        model = vits.__dict__[args.arch](patch_size=args.patch_size, num_classes=0)
+        model = vits.__dict__[args.arch](patch_size=args.patch_size, num_classes=0, num_patches=args.num_fix, in_chans=args.num_channels, no_pos_embed=no_pos_embed)
         embed_dim = model.embed_dim * (args.n_last_blocks + int(args.avgpool_patchtokens))
     # if the network is a XCiT
     elif "xcit" in args.arch:
@@ -56,7 +60,9 @@ def eval_linear(args):
     model.cuda()
     model.eval()
     # load weights to evaluate
-    utils.load_pretrained_weights(model, args.pretrained_weights, args.checkpoint_key, args.arch, args.patch_size)
+    utils.load_pretrained_weights(model, args.pretrained_weights, args.checkpoint_key, args.arch, args.patch_size, args.num_fix)
+    if args.no_pos_embed:
+        model.pos_embed.requires_grad = False
     print(f"Model {args.arch} built.")
 
     linear_classifier = LinearClassifier(embed_dim, num_labels=args.num_labels)
@@ -66,16 +72,35 @@ def eval_linear(args):
     # ============ preparing data ... ============
     
     defaultValues = {
-        'image_dir': r'/work/scratch/tnguyen/images/imagenet/patches/',
-        'max_fix_length': 10,
+        # 'image_dir': r'/work/scratch/tnguyen/images/imagenet/patches/',
+        'image_dir': r'/images/innoretvision/eye/imagenet_patch/',
+        'max_fix_length': args.num_fix,
         'patch_size': (16, 16),
     }
-    dataset_train_file = defaultValues['image_dir'] + 'dataset_train.pickle'
-    dataset_val_file = defaultValues['image_dir'] + 'dataset_val.pickle'
-    with open(dataset_train_file, 'rb') as handle:
-        dataset_train = pickle.load(handle)
-    with open(dataset_val_file, 'rb') as handle:
-        dataset_val = pickle.load(handle)
+    dataset_train = ImagenetFixationDataset(
+        # root=defaultValues['train_root'],
+        root=defaultValues['image_dir']+'train_50/',
+        extensions=(".npy"),
+        patch_dir=defaultValues['image_dir']+'train_50/',
+        max_fix_length=defaultValues['max_fix_length'],
+        channels=1,
+        patch_size=defaultValues['patch_size'],
+    )
+    dataset_val = ImagenetFixationDataset(
+        # root=defaultValues['val_root'],
+        root=defaultValues['image_dir']+'val_50/',
+        extensions=(".npy"),
+        patch_dir=defaultValues['image_dir']+'val_50/',
+        max_fix_length=defaultValues['max_fix_length'],
+        channels=1,
+        patch_size=defaultValues['patch_size'],
+    )  
+    # dataset_train_file = defaultValues['image_dir'] + 'dataset_train.pickle'
+    # dataset_val_file = defaultValues['image_dir'] + 'dataset_val.pickle'
+    # with open(dataset_train_file, 'rb') as handle:
+    #     dataset_train = pickle.load(handle)
+    # with open(dataset_val_file, 'rb') as handle:
+    #     dataset_val = pickle.load(handle)
 
     # val_transform = pth_transforms.Compose([
     #     pth_transforms.Resize(256, interpolation=3),
@@ -170,7 +195,7 @@ def train(model, linear_classifier, optimizer, loader, epoch, n, avgpool):
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
-    for (inp, target) in metric_logger.log_every(loader, 20, header):
+    for (inp, target) in metric_logger.log_every(loader, 500, header):  # 500 steps
         # move to gpu
         inp = inp.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
@@ -274,6 +299,9 @@ if __name__ == '__main__':
         help="""Whether ot not to concatenate the global average pooled features to the [CLS] token.
         We typically set this to False for ViT-Small and to True with ViT-Base.""")
     parser.add_argument('--arch', default='vit_small', type=str, help='Architecture')
+    parser.add_argument('--no_pos_embed', action='store_true') 
+    parser.add_argument('--num_fix', default=None, type=int, help='Number of fixations.')
+    parser.add_argument('--num_channels', default=3, type=int, help='Number of channels.')
     parser.add_argument('--patch_size', default=16, type=int, help='Patch resolution of the model.')
     parser.add_argument('--pretrained_weights', default='', type=str, help="Path to pretrained weights to evaluate.")
     parser.add_argument("--checkpoint_key", default="teacher", type=str, help='Key to use in the checkpoint (example: "teacher")')

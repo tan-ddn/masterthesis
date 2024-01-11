@@ -23,7 +23,7 @@
 cmd = /home/students/tnguyen/masterthesis/scripts/train_dino_imnetfix.sh
 
 # command line arguments
-args = --batch_size_per_gpu 2048 --num_labels 1000 --output_dir /work/scratch/tnguyen/logs/dino_imnetfix/3 --pretrained_weights /home/students/tnguyen/masterthesis/dino/dino_deitsmall16_pretrain.pth --lr 1e-3 --epochs 100 --patch_size 16 --num_workers 8
+args = --batch_size_per_gpu 384 --num_labels 1000 --no_pos_embed --num_fix 50 --num_channels 1 --output_dir /work/scratch/tnguyen/logs/dino_imnetfix/4 --pretrained_weights /home/students/tnguyen/masterthesis/dino/dino_deitsmall16_pretrain.pth --lr 1e-4 --epochs 50 --patch_size 16 --num_workers 8
 
 # start directory
 initialdir = /home/students/tnguyen/masterthesis
@@ -83,7 +83,7 @@ requirements = (GPURAM > 10000) && TARGET.Machine!="abatux.lfb.rwth-aachen.de" &
 # requirements = (GPURAM > 10000) && (GPURAM < 20000) && POOL =="workstation"
 # requirements = TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
 # requirements = TARGET.Machine=="maxwell.lfb.rwth-aachen.de"
-requirements = GPUs_Capability < 7.5
+requirements = GPUs_Capability <= 7.5
 
 
 # required number of CPU cores

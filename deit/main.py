@@ -166,6 +166,7 @@ def get_args_parser():
     parser.add_argument('--data-set', default='IMNET', choices=['CIFAR', 'IMNET', 'INAT', 'INAT19', 'COCO18TP', 'IMNETFIX', 'IMNETG', 'IMNET160', 'IMNET160G'],
                         type=str, help='Image Net dataset path')
     parser.add_argument('--data-limit', default=None, type=int, help='Limit range of data')
+    parser.add_argument('--num-fix', default=50, type=int, help='Number of top fixations')
     parser.add_argument('--inat-category', default='name',
                         choices=['kingdom', 'phylum', 'class', 'order', 'supercategory', 'family', 'genus', 'name'],
                         type=str, help='semantic granularity')
@@ -281,7 +282,7 @@ def main(args):
             'train_root': r'/images/innoretvision/eye/imagenet_patch/train_50/',
             'val_root': r'/images/innoretvision/eye/imagenet_patch/val_50/',
             'image_dir': r'/images/innoretvision/eye/imagenet_patch/',
-            'max_fix_length': 50,
+            'max_fix_length': args.num_fix,
             'patch_size': (16, 16),
         }
         # # data_loader_train, data_loader_val, dataset_sizes = imagenetfix_data(args, defaultValues)
@@ -311,7 +312,7 @@ def main(args):
             'train_label_file': r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_train_split1.json',
             'val_label_file': r'/images/innoretvision/cocosearch/coco_search18_labels_TP/coco_search18_fixations_TP_validation_split1.json',
             'image_dir': r'/work/scratch/tnguyen/images/cocosearch/patches/',
-            'max_fix_length': 49,
+            'max_fix_length': 49,  # args.num_fix
             'patch_size': (16, 16),
         }
         data_loader_train, data_loader_val, dataset_sizes = coco18tp_data(args, defaultValues)
@@ -550,7 +551,8 @@ def main(args):
     output_dir = Path(args.output_dir)
     checkpoint_file = Path(args.output_dir+"/checkpoint.pth")
     if checkpoint_file.is_file():
-        args.resume = checkpoint_file
+        print(f'checkpoint file: {args.output_dir+"/checkpoint.pth"}')
+        args.resume = args.output_dir+"/checkpoint.pth"
     if args.resume:
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(
