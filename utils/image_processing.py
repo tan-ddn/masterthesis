@@ -103,7 +103,7 @@ class ImageFile:
         return (left, upper, right, bottom)
     
     def to_fixations(self,
-                        patch_size : int | tuple,
+                        patch_size : int or tuple,
                         image_size : tuple,
                         coordinates : list = None,
                         X : np.array = None,
