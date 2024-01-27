@@ -24,14 +24,14 @@ class Fixation(nn.Module):
         device: str,
         img_size: int,
         patch_size: int,
-        fixation_channel: int,
+        fixation_grayscale: bool = False,
         top: float = 0.5,
     ) -> None:
         super().__init__()
         self.device = device
         self.img_size = img_size
         self.patch_size = patch_size
-        self.fixation_channel = fixation_channel
+        self.fixation_grayscale = fixation_grayscale
         self.top = top
         self.w_featmap = self.h_featmap = img_size // patch_size
     
@@ -50,12 +50,13 @@ class Fixation(nn.Module):
         w, h = W // self.patch_size, H // self.patch_size
         num_patches = w * h
         assert B == img_B
-        if C != self.fixation_channel:
+        if self.fixation_grayscale:
             transform = pth_transforms.Compose([
-                pth_transforms.Grayscale(num_output_channels=1)
+                pth_transforms.Grayscale(num_output_channels=3),
+                pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
             ])
             input_images = transform(input_images)
-            C = self.fixation_channel
+            # C = self.fixation_grayscale
         
         attentions = x[:, :, 0, 1:].reshape(B, NH, -1)
         # print(f"attentions shape {attentions.shape}")
@@ -63,29 +64,64 @@ class Fixation(nn.Module):
         # print(f"attentions shape {attentions.shape}")
         # return attentions
 
-        val, idx = torch.sort(attentions, descending=True)
+        values, idx = torch.sort(attentions, descending=True)
         # print(f'val, idx: {val}, {idx}')
         cutoff_length = int(self.top * num_patches)
         # cutoff_length = -1
-        selected_idx = idx[:, :cutoff_length]
-        patch_coordinates = self.find_coordinates_from_idx(selected_idx)
-        # print(f"patch_coordinates shape {patch_coordinates.shape}")
-        output = torch.zeros(input_images.shape)
+        # """Old and slow version"""
+        # selected_idx = idx[:, :cutoff_length]
+        # patch_coordinates = self.find_coordinates_from_idx(selected_idx)
+        # # print(f"patch_coordinates shape {patch_coordinates.shape}")
+        # output = torch.zeros(input_images.shape, device=self.device)
+        # # for i in range(B):
+        # #     for c in range(C):
+        # #         for wj in range(W):
+        # #             for hj in range(H):
+        # #                 if torch.tensor([wj, hj]).to(self.device) in patch_coordinates[i]:
+        # #                     output[i][c][wj:wj+self.patch_size][hj:hj+self.patch_size] = input_images[i][c][wj:wj+self.patch_size][hj:hj+self.patch_size]
         # for i in range(B):
-        #     for c in range(C):
-        #         for wj in range(W):
-        #             for hj in range(H):
-        #                 if torch.tensor([wj, hj]).to(self.device) in patch_coordinates[i]:
-        #                     output[i][c][wj:wj+self.patch_size][hj:hj+self.patch_size] = input_images[i][c][wj:wj+self.patch_size][hj:hj+self.patch_size]
-        for i in range(B):
-            for coor in patch_coordinates[i]:
-                x, y = int(coor[0]), int(coor[1])
-                # print(f"x, y = {x, y}")
-                for xi in range(x, x+self.patch_size):
-                    for yi in range(y, y+self.patch_size):
-                        for c in range(C):
-                            output[i][c][xi][yi] = input_images[i][c][xi][yi]
-        # print(f"number of non zeros: {torch.count_nonzero(output)}")
-        output = output.to(self.device)
-        return torch.flatten(output, start_dim=1)
+        #     for coor in patch_coordinates[i]:
+        #         x, y = int(coor[0]), int(coor[1])
+        #         # print(f"x, y = {x, y}")
+        #         for xi in range(x, x+self.patch_size):
+        #             for yi in range(y, y+self.patch_size):
+        #                 for c in range(C):
+        #                     output[i][c][xi][yi] = input_images[i][c][xi][yi]
+        # # print(f"number of non zeros: {torch.count_nonzero(output)}")
+        # # return torch.flatten(output, start_dim=1)
+        """New version"""
+        cutoff_values = values[:, :cutoff_length]
+        cutoff_values = cutoff_values[:, -1:]  # select a threshold for each image in a batch
+        attn_mask = torch.where(attentions > cutoff_values, 1., 0.)
+        attn_mask = attn_mask.unsqueeze(1).reshape(B, 1, w, h)
+        # print(f"attn_mask shape {attn_mask.shape}")
+        attn_mask = torch.nn.functional.interpolate(attn_mask, size=(W, H), mode='nearest-exact')
+        # print(f"attn_mask shape after interpolate {attn_mask.shape}")
+        output = input_images * attn_mask.expand(-1, 3, -1, -1)
+        return output
     
+
+if __name__ == '__main__':
+    """For testing purpose"""
+    attentions = torch.tensor([
+        [15., 0., 13., 8.],
+        [7., 2., 0., 10.],
+    ])
+    cutoff_values = torch.tensor([
+        [5.],
+        [0.],
+    ])
+    attn_mask = torch.where(attentions > cutoff_values, 1., 0.)
+    print(f"attn_mask {attn_mask}")
+
+    # attn_mask = torch.tensor([[[
+    #     [0., 0., 1., 1.],
+    #     [0., 0., 0., 1.],
+    #     [0., 1., 1., 1.],
+    #     [1., 0., 0., 0.],
+    # ]]])
+    # print(f"attn_mask {attn_mask}")
+    # print(f"attn_mask shape {attn_mask.shape}")
+    # attn_mask = torch.nn.functional.interpolate(attn_mask, scale_factor=(3, 3), mode='nearest-exact')
+    # print(f"attn_mask {attn_mask}")
+    # print(f"attn_mask shape {attn_mask.shape}")

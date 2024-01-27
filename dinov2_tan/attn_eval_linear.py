@@ -46,7 +46,7 @@ from dinov2_lib.dinov2.eval.setup import get_autocast_dtype
 import dinov2_lib.dinov2.utils.utils as dinov2_utils
 from dinov2_lib.dinov2.utils.config import setup
 import dinov2_lib.dinov2.distributed as distributed
-from dinov2_lib.dinov2.eval.linear import has_ddp_wrapper, remove_ddp_wrapper, LinearPostprocessor, _pad_and_collate, AllClassifiers, scale_lr
+from dinov2_lib.dinov2.eval.linear import has_ddp_wrapper, remove_ddp_wrapper, LinearPostprocessor, _pad_and_collate, AllClassifiers, scale_lr, setup_linear_classifiers
 from dinov2_lib.dinov2.data import SamplerType, make_data_loader, make_dataset
 from dinov2_lib.dinov2.data.transforms import make_classification_eval_transform, make_classification_train_transform
 from dinov2_lib.dinov2.eval.utils import ModelWithIntermediateLayers
@@ -164,18 +164,18 @@ def get_args_parser(
     parser.add_argument("--image_size", default=518, type=int, help="Resize image.")
     parser.add_argument("--checkpoint_key", default="teacher", type=str,
         help='Key to use in the checkpoint (example: "teacher")')
-    parser.add_argument("--fixation_channel", default=1, type=int, help="Number of channels in fixations")
+    parser.add_argument("--fixation_grayscale", action="store_true", help="Fixations in grayscale or rgb. Default is rgb")
     parser.add_argument("--fixation_top", default=0.1, type=float, help="Percentage of fixations with top attention score")
     parser.set_defaults(
         train_dataset_str="ImageNetWds",
         val_dataset_str="ImageNetWds",
         test_dataset_strs=None,
         epochs=10,
-        batch_size=64,
-        num_workers=8,
-        epoch_length=2500,
-        save_checkpoint_frequency=20,
-        eval_period_iterations=2500,
+        batch_size=128,
+        num_workers=1,
+        epoch_length=10000,
+        save_checkpoint_frequency=1,
+        eval_period_iterations=10000,
         learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 0.1],
         val_metric_type=MetricType.MEAN_ACCURACY,
         test_metric_types=None,
@@ -185,7 +185,8 @@ def get_args_parser(
         patch_size=14,
         image_size=518,
         checkpoint_key="teacher",
-        fixation_channel=1,
+        fixation_grayscale=False,
+        fixation_top=0.1,
     )
     return parser
 
@@ -199,7 +200,7 @@ class ModelLastSelfAttentionFixation(nn.Module):
             device=args.device,
             img_size=args.image_size,
             patch_size=args.patch_size,
-            fixation_channel=args.fixation_channel,
+            fixation_grayscale=args.fixation_grayscale,
             top=args.fixation_top,
         )
         self.n_last_blocks = n_last_blocks
@@ -215,45 +216,46 @@ class ModelLastSelfAttentionFixation(nn.Module):
         return outputs, fixations
 
 
-class LinearClassifier(nn.Module):
-    """Linear layer to train on top of frozen features"""
+# class LinearClassifier(nn.Module):
+#     """Linear layer to train on top of frozen features"""
 
-    def __init__(self, out_dim, num_classes=1000):
-        super().__init__()
-        self.out_dim = out_dim
-        self.num_classes = num_classes
-        self.linear = nn.Linear(out_dim, num_classes)
-        self.linear.weight.data.normal_(mean=0.0, std=0.01)
-        self.linear.bias.data.zero_()
+#     def __init__(self, out_dim, num_classes=1000):
+#         super().__init__()
+#         self.out_dim = out_dim
+#         self.num_classes = num_classes
+#         self.linear = nn.Linear(out_dim, num_classes)
+#         self.linear.weight.data.normal_(mean=0.0, std=0.01)
+#         self.linear.bias.data.zero_()
 
-    def forward(self, x_tokens_list):
-        return self.linear(x_tokens_list)
+#     def forward(self, x_tokens_list):
+#         return self.linear(x_tokens_list)
 
 
-def setup_linear_classifiers(sample_output, learning_rates, batch_size, num_classes=1000):
-    linear_classifiers_dict = nn.ModuleDict()
-    optim_param_groups = []
-    for _lr in learning_rates:
-        lr = scale_lr(_lr, batch_size)
-        out_dim = sample_output.shape[1]
-        linear_classifier = LinearClassifier(
-            out_dim, num_classes=num_classes
-        )
-        linear_classifier = linear_classifier.cuda()
-        linear_classifiers_dict[
-            f"classifier_lr_{lr:.5f}".replace(".", "_")
-        ] = linear_classifier
-        optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
+# def setup_linear_classifiers(sample_output, learning_rates, batch_size, num_classes=1000):
+#     linear_classifiers_dict = nn.ModuleDict()
+#     optim_param_groups = []
+#     for _lr in learning_rates:
+#         lr = scale_lr(_lr, batch_size)
+#         out_dim = sample_output.shape[1]
+#         linear_classifier = LinearClassifier(
+#             out_dim, num_classes=num_classes
+#         )
+#         linear_classifier = linear_classifier.cuda()
+#         linear_classifiers_dict[
+#             f"classifier_lr_{lr:.5f}".replace(".", "_")
+#         ] = linear_classifier
+#         optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
 
-    linear_classifiers = AllClassifiers(linear_classifiers_dict)
-    if distributed.is_enabled():
-        linear_classifiers = nn.parallel.DistributedDataParallel(linear_classifiers)
+#     linear_classifiers = AllClassifiers(linear_classifiers_dict)
+#     if distributed.is_enabled():
+#         linear_classifiers = nn.parallel.DistributedDataParallel(linear_classifiers)
 
-    return linear_classifiers, optim_param_groups
+#     return linear_classifiers, optim_param_groups
 
 
 @torch.no_grad()
 def evaluate(
+    fixation_model,
     model: nn.Module,
     data_loader,
     postprocessors: Dict[str, nn.Module],
@@ -261,6 +263,7 @@ def evaluate(
     device: torch.device,
     criterion: Optional[nn.Module] = None,
 ):
+    fixation_model.eval()
     model.eval()
     if criterion is not None:
         criterion.eval()
@@ -272,7 +275,12 @@ def evaluate(
     header = "Test:"
 
     for samples, targets, *_ in metric_logger.log_every(data_loader, 10, header):
-        outputs, fixations = model(samples.to(device))
+        # outputs = model(samples.to(device))
+
+        # outputs, fixations = model(samples.to(device))
+        _, fixations = fixation_model(samples.to(device))
+        outputs = model(fixations)
+
         targets = targets.to(device)
 
         if criterion is not None:
@@ -280,8 +288,8 @@ def evaluate(
             metric_logger.update(loss=loss.item())
 
         for k, metric in metrics.items():
-            # metric_inputs = postprocessors[k](outputs, targets)
-            metric_inputs = postprocessors[k](fixations, targets)
+            metric_inputs = postprocessors[k](outputs, targets)
+            # metric_inputs = postprocessors[k](fixations, targets)
             metric.update(**metric_inputs)
 
     metric_logger.synchronize_between_processes()
@@ -294,6 +302,7 @@ def evaluate(
 
 @torch.no_grad()
 def evaluate_linear_classifiers(
+    fixation_model,
     feature_model,
     linear_classifiers,
     data_loader,
@@ -313,6 +322,7 @@ def evaluate_linear_classifiers(
     metrics = {k: metric.clone() for k in linear_classifiers.classifiers_dict}
 
     _, results_dict_temp = evaluate(
+        fixation_model,
         feature_model,
         data_loader,
         postprocessors,
@@ -347,6 +357,7 @@ def evaluate_linear_classifiers(
 
 
 def test_on_datasets(
+    fixation_model,
     feature_model,
     linear_classifiers,
     test_dataset_strs,
@@ -365,6 +376,7 @@ def test_on_datasets(
         logger.info(f"Testing on {test_dataset_str}")
         test_data_loader = make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type)
         dataset_results_dict = evaluate_linear_classifiers(
+            fixation_model,
             feature_model,
             remove_ddp_wrapper(linear_classifiers),
             test_data_loader,
@@ -425,8 +437,9 @@ class ImageNetWds(wds.WebDataset):
         
 
 def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type):
+    resize_size = int(args.image_size * 1.15)
     if test_dataset_str == 'ImageNetWds':
-        test_transform = make_classification_eval_transform()
+        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size)
         pil_dataset = (
             ImageNetWds(
             # wids.ShardListDataset(
@@ -458,7 +471,7 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
     else:
         test_dataset = make_dataset(
             dataset_str=test_dataset_str,
-            transform=make_classification_eval_transform(),
+            transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size),
         )
         test_data_loader = make_data_loader(
             dataset=test_dataset,
@@ -475,6 +488,7 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
 
 def eval_linear(
     *,
+    fixation_model,
     feature_model,
     linear_classifiers,
     train_data_loader,
@@ -512,9 +526,13 @@ def eval_linear(
         data = data.cuda(non_blocking=True)
         labels = labels.cuda(non_blocking=True)
 
-        features, fixations = feature_model(data)
+        # features = feature_model(data)
         # outputs = linear_classifiers(features)
-        outputs = linear_classifiers(fixations)
+        # features, fixations = feature_model(data)
+        # outputs = linear_classifiers(fixations)
+        _, fixations = fixation_model(data)
+        features = feature_model(fixations)
+        outputs = linear_classifiers(features)
 
         losses = {f"loss_{k}": nn.CrossEntropyLoss()(v, labels) for k, v in outputs.items()}
         loss = sum(losses.values())
@@ -545,6 +563,7 @@ def eval_linear(
 
         if eval_period > 0 and (iteration + 1) % eval_period == 0 and iteration != max_iter - 1:
             _ = evaluate_linear_classifiers(
+                fixation_model=fixation_model,
                 feature_model=feature_model,
                 linear_classifiers=remove_ddp_wrapper(linear_classifiers),
                 data_loader=val_data_loader,
@@ -560,6 +579,7 @@ def eval_linear(
         iteration = iteration + 1
 
     val_results_dict = evaluate_linear_classifiers(
+        fixation_model=fixation_model,
         feature_model=feature_model,
         linear_classifiers=remove_ddp_wrapper(linear_classifiers),
         data_loader=val_data_loader,
@@ -603,7 +623,7 @@ def run_eval_linear(
         assert len(test_metric_types) == len(test_dataset_strs)
     assert len(test_dataset_strs) == len(test_class_mapping_fpaths)
 
-    train_transform = make_classification_train_transform()
+    train_transform = make_classification_train_transform(crop_size=args.image_size)
     if train_dataset_str == 'ImageNetWds':
         pil_dataset = (
             ImageNetWds(
@@ -635,19 +655,23 @@ def run_eval_linear(
     n_last_blocks_list = [1, 4]
     n_last_blocks = max(n_last_blocks_list)
     autocast_ctx = partial(torch.cuda.amp.autocast, enabled=True, dtype=autocast_dtype)
-    # feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
-    feature_model = ModelLastSelfAttentionFixation(model, args, n_last_blocks, autocast_ctx).to(args.device)
+    fixation_model = ModelLastSelfAttentionFixation(model, args, 2, autocast_ctx).to(args.device)
+    feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
     if train_dataset_str == 'ImageNetWds':
         for image, label in train_dataset:
             break
-        sample_output, fixations = feature_model(image.unsqueeze(0).cuda())
+        # sample_output, fixations = feature_model(image.unsqueeze(0).cuda())
+        _, fixations = fixation_model(image.unsqueeze(0).cuda())
+        sample_output = feature_model(fixations)
     else:
-        sample_output, fixations = feature_model(train_dataset[0][0].unsqueeze(0).cuda())
+        # sample_output, fixations = feature_model(train_dataset[0][0].unsqueeze(0).cuda())
+        _, fixations = fixation_model(train_dataset[0][0].unsqueeze(0).cuda())
+        sample_output = feature_model(fixations)
 
     linear_classifiers, optim_param_groups = setup_linear_classifiers(
-        # sample_output,
-        # n_last_blocks_list,
-        fixations,
+        sample_output,
+        n_last_blocks_list,
+        # fixations,
         learning_rates,
         batch_size,
         training_num_classes,
@@ -692,6 +716,7 @@ def run_eval_linear(
     for epoch in range(epochs):
         logger.info(f"Epoch {epoch}")
         val_results_dict, feature_model, linear_classifiers, iteration = eval_linear(
+            fixation_model=fixation_model,
             feature_model=feature_model,
             linear_classifiers=linear_classifiers,
             train_data_loader=train_data_loader,
@@ -713,6 +738,7 @@ def run_eval_linear(
     results_dict = {}
     if len(test_dataset_strs) > 1 or test_dataset_strs[0] != val_dataset_str:
         results_dict = test_on_datasets(
+            fixation_model,
             feature_model,
             linear_classifiers,
             test_dataset_strs,
@@ -926,15 +952,19 @@ def visualize_fixations(args):
     #     images=img,
     #     img_size=args.image_size,
     #     patch_size=args.patch_size,
-    #     fixation_channel=args.fixation_channel,
+    #     fixation_grayscale=args.fixation_grayscale,
     #     top=args.fixation_top
     # )
     # fixations = fixation_layer(attentions)
     autocast_ctx = partial(torch.cuda.amp.autocast, enabled=True, dtype=autocast_dtype)
     feature_model = ModelLastSelfAttentionFixation(model, args, 4, autocast_ctx)
     sample_output, fixations = feature_model(img)
-    print(f"sample_output shape {len(sample_output), len(sample_output[0]), len(sample_output[0][0]), len(sample_output[0][1])}")
-    fixations = fixations.reshape(img.shape)
+    for i in range(len(sample_output)):
+        print(f"last layer {i}")
+        out, cls = sample_output[i]
+        print(f"out shape {out[0].shape}")
+        print(f"cls shape {cls[0].shape}")
+    # fixations = fixations.reshape((img.shape[0], 1, img.shape[2], img.shape[3]))
     print(f"fixations shape {fixations.shape}")
     """Visualize the fixations"""
     image_dir, image_name = os.path.split(args.image_path)  # image_dir ~ /images/PublicDatasets/imagenet/train/n02823428
@@ -949,12 +979,12 @@ def visualize_fixations(args):
 if __name__ == '__main__':
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     
-    # description = "DINOv2 Visualize Self-Attention maps"
-    # args_parser = get_args_parser(description=description)
-    # args = args_parser.parse_args()
-    # args.device = device
+    description = "DINOv2 Visualize Self-Attention maps"
+    args_parser = get_args_parser(description=description)
+    args = args_parser.parse_args()
+    args.device = device
 
-    # sys.exit(main(args))
+    sys.exit(main(args))
 
     parser = argparse.ArgumentParser('Visualize Self-Attention Linear Classification')
     parser.add_argument('--arch', default='vit_small', type=str,
@@ -966,7 +996,8 @@ if __name__ == '__main__':
         help='Key to use in the checkpoint (example: "teacher")')
     parser.add_argument("--image_path", default=None, type=str, help="Path of the image to load.")
     parser.add_argument("--image_size", default=518, type=int, help="Resize image.")
-    parser.add_argument("--fixation_channel", default=1, type=int, help="Number of channels in fixations")
+    parser.add_argument("--fixation_grayscale", action="store_true", help="Fixations in grayscale or rgb. Default is rgb")
+    parser.add_argument("--fixation_top", default=0.1, type=float, help="Percentage of fixations with top attention score")
     parser.add_argument('--output_dir', default='.', help='Path where to save visualizations.')
     parser.add_argument(
         "--config-file",

@@ -23,7 +23,9 @@
 cmd = /home/students/tnguyen/masterthesis/scripts/train_dinov2_imnetfix.sh
 
 # command line arguments
-args = --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /work/scratch/tnguyen/dinov2/fixation/config.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/1 --fixation_top 0.5
+args = --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/5 --fixation_top 0.5 --fixation_grayscale
+
+# args = --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 448 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/4 --fixation_top 0.05 --fixation_grayscale
 
 # start directory
 initialdir = /home/students/tnguyen/masterthesis
