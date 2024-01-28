@@ -13,7 +13,7 @@
 # limitations under the License.
 import sys
 import logging
-import os
+import os, psutil
 import sys
 import argparse
 import requests
@@ -35,6 +35,7 @@ from PIL import Image
 from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
 import webdataset as wds
 import wids
+import gc
 
 
 sys.path.append("/home/students/tnguyen/masterthesis")
@@ -164,18 +165,19 @@ def get_args_parser(
     parser.add_argument("--image_size", default=518, type=int, help="Resize image.")
     parser.add_argument("--checkpoint_key", default="teacher", type=str,
         help='Key to use in the checkpoint (example: "teacher")')
-    parser.add_argument("--fixation_grayscale", action="store_true", help="Fixations in grayscale or rgb. Default is rgb")
-    parser.add_argument("--fixation_top", default=0.1, type=float, help="Percentage of fixations with top attention score")
+    parser.add_argument("--fixation_grayscale", action="store_true", help="Fixations in grayscale or rgb. Default is rgb.")
+    parser.add_argument("--fixation_top", default=0.1, type=float, help="Percentage of fixations with top attention score.")
+    parser.add_argument("--run_on_cluster", action="store_true", help="Run on cluster or local machine. Default: local machine.")
     parser.set_defaults(
         train_dataset_str="ImageNetWds",
         val_dataset_str="ImageNetWds",
         test_dataset_strs=None,
         epochs=10,
-        batch_size=128,
+        batch_size=512,
         num_workers=1,
-        epoch_length=10000,
+        epoch_length=2501,
         save_checkpoint_frequency=1,
-        eval_period_iterations=10000,
+        eval_period_iterations=2501,
         learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 0.1],
         val_metric_type=MetricType.MEAN_ACCURACY,
         test_metric_types=None,
@@ -187,6 +189,7 @@ def get_args_parser(
         checkpoint_key="teacher",
         fixation_grayscale=False,
         fixation_top=0.1,
+        run_on_cluster=False,
     )
     return parser
 
@@ -292,6 +295,9 @@ def evaluate(
             # metric_inputs = postprocessors[k](fixations, targets)
             metric.update(**metric_inputs)
 
+    # clear memory
+    del fixations, outputs
+
     metric_logger.synchronize_between_processes()
     logger.info(f"Averaged stats: {metric_logger}")
 
@@ -392,34 +398,6 @@ def test_on_datasets(
     return results_dict
 
 
-def wds_gen(url, split = 'train'):
-    pil_dataset = (
-        wds.WebDataset(
-        # wids.ShardListDataset(
-            url,
-        )
-        .shuffle(5000)
-        .decode("pil")
-        .to_tuple("jpg", "cls")
-    )
-    transform = make_transform(split)
-
-    def preprocess(sample):
-        image, label = sample
-        # image, label = sample[".jpg"], sample[".cls"]
-        return transform(image), label
-
-    wds_dataset = pil_dataset.map(preprocess)
-    return wds_dataset
-
-
-def make_transform(split):
-    if split == 'train':
-        return make_classification_train_transform()
-    else:
-        return make_classification_eval_transform()
-
-
 class ImageNetWds(wds.WebDataset):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)  # type: ignore
@@ -440,10 +418,13 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
     resize_size = int(args.image_size * 1.15)
     if test_dataset_str == 'ImageNetWds':
         test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size)
+        test_data_path = r'/images/innoretvision/eye/imagenet_patch/val/imagenet-val-{000000..000003}.tar'
+        if args.run_on_cluster:
+            test_data_path = r'/images/innoretvision/eye/imagenet_patch/val/imagenet-val-{000000..000006}.tar'
         pil_dataset = (
             ImageNetWds(
             # wids.ShardListDataset(
-                '/images/innoretvision/eye/imagenet_patch/val/imagenet-val-{000000..000006}.tar',
+                test_data_path,
             )
             .set_split('val')
             .shuffle(5000)
@@ -546,11 +527,15 @@ def eval_linear(
         scheduler.step()
 
         # log
-        if iteration % 10 == 0:
+        if iteration % 100 == 0:
             torch.cuda.synchronize()
             metric_logger.update(loss=loss.item())
             metric_logger.update(lr=optimizer.param_groups[0]["lr"])
             print("lr", optimizer.param_groups[0]["lr"])
+            # clear memory
+            del fixations, features, outputs
+            ram_usage = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+            print(f"ram usage: {ram_usage}")
 
         if iteration - start_iter > 5:
             if iteration % running_checkpoint_period == 0:
@@ -625,10 +610,13 @@ def run_eval_linear(
 
     train_transform = make_classification_train_transform(crop_size=args.image_size)
     if train_dataset_str == 'ImageNetWds':
+        train_data_path = r'/images/innoretvision/eye/imagenet_patch/train/imagenet-train-{000000..000070}.tar'
+        if args.run_on_cluster:
+            train_data_path = r'/images/innoretvision/eye/imagenet_patch/train/imagenet-train-{000000..000146}.tar'
         pil_dataset = (
             ImageNetWds(
             # wids.ShardListDataset(
-                '/images/innoretvision/eye/imagenet_patch/train/imagenet-train-{000000..000146}.tar',
+                train_data_path,
             )
             .shuffle(5000)
             .decode("pil")
@@ -676,6 +664,7 @@ def run_eval_linear(
         batch_size,
         training_num_classes,
     )
+    del fixations, sample_output
 
     optimizer = torch.optim.SGD(optim_param_groups, momentum=0.9, weight_decay=0)
     max_iter = epochs * epoch_length
@@ -735,6 +724,9 @@ def run_eval_linear(
             val_class_mapping=val_class_mapping,
             classifier_fpath=classifier_fpath,
         )
+        gc.collect()
+        ram_usage = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+        print(f"ram usage: {ram_usage}")
     results_dict = {}
     if len(test_dataset_strs) > 1 or test_dataset_strs[0] != val_dataset_str:
         results_dict = test_on_datasets(
@@ -999,6 +991,7 @@ if __name__ == '__main__':
     parser.add_argument("--fixation_grayscale", action="store_true", help="Fixations in grayscale or rgb. Default is rgb")
     parser.add_argument("--fixation_top", default=0.1, type=float, help="Percentage of fixations with top attention score")
     parser.add_argument('--output_dir', default='.', help='Path where to save visualizations.')
+    parser.add_argument("--run_on_cluster", action="store_true", help="Run on cluster or local machine. Default: local machine.")
     parser.add_argument(
         "--config-file",
         type=str,

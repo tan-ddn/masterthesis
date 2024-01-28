@@ -23,9 +23,8 @@
 cmd = /home/students/tnguyen/masterthesis/scripts/train_dinov2_imnetfix.sh
 
 # command line arguments
-args = --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/5 --fixation_top 0.5 --fixation_grayscale
-
-# args = --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 448 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/4 --fixation_top 0.05 --fixation_grayscale
+# args = --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/5 --fixation_top 0.5 --fixation_grayscale
+# args = --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 448 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/4 --fixation_top 0.05 --fixation_grayscale
 
 # start directory
 initialdir = /home/students/tnguyen/masterthesis
@@ -94,7 +93,7 @@ request_cpus = 1
 request_gpus = 1
 
 # required CPU RAM
-request_memory = 100 GB
+request_memory = 80 GB
 
 # required Disk space
 
@@ -125,11 +124,13 @@ load_profile = True
 
 
 # number of executions of this job
-queue 1 
+# queue 1 
 
 # if you want to use a range of arguments, 
 # you can add them like this, one set of argumetns per line
-# queue 1 arguments from (
-# arg1 arg2 arg3
-# arg1 arg2 arg3
-# )
+queue 1 arguments from (
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/6 --fixation_top 0.5
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/7 --fixation_top 0.1 --fixation_grayscale
+--run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/8 --fixation_top 0.5 --fixation_grayscale
+--run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/9 --fixation_top 0.2 --fixation_grayscale
+)

@@ -34,6 +34,14 @@ class Fixation(nn.Module):
         self.fixation_grayscale = fixation_grayscale
         self.top = top
         self.w_featmap = self.h_featmap = img_size // patch_size
+        self.num_patches = self.w_featmap * self.h_featmap
+        self.cutoff_length = int(self.top * self.num_patches)
+        # self.cutoff_length = -1
+        if self.fixation_grayscale:
+            self.transform = pth_transforms.Compose([
+                pth_transforms.Grayscale(num_output_channels=3),
+                pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+            ])
     
     def find_coordinates_from_idx(self, id_mat):
         # y = id // self.w_featmap
@@ -47,16 +55,11 @@ class Fixation(nn.Module):
     def forward(self, x: Tensor, input_images: Tensor,) -> Tensor:
         B, NH, _, _ = x.shape
         img_B, C, W, H = input_images.shape
-        w, h = W // self.patch_size, H // self.patch_size
-        num_patches = w * h
+        assert (self.w_featmap == W // self.patch_size)
+        assert self.h_featmap == H // self.patch_size
         assert B == img_B
         if self.fixation_grayscale:
-            transform = pth_transforms.Compose([
-                pth_transforms.Grayscale(num_output_channels=3),
-                pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-            ])
-            input_images = transform(input_images)
-            # C = self.fixation_grayscale
+            input_images = self.transform(input_images)
         
         attentions = x[:, :, 0, 1:].reshape(B, NH, -1)
         # print(f"attentions shape {attentions.shape}")
@@ -66,8 +69,6 @@ class Fixation(nn.Module):
 
         values, idx = torch.sort(attentions, descending=True)
         # print(f'val, idx: {val}, {idx}')
-        cutoff_length = int(self.top * num_patches)
-        # cutoff_length = -1
         # """Old and slow version"""
         # selected_idx = idx[:, :cutoff_length]
         # patch_coordinates = self.find_coordinates_from_idx(selected_idx)
@@ -90,19 +91,21 @@ class Fixation(nn.Module):
         # # print(f"number of non zeros: {torch.count_nonzero(output)}")
         # # return torch.flatten(output, start_dim=1)
         """New version"""
-        cutoff_values = values[:, :cutoff_length]
+        cutoff_values = values[:, :self.cutoff_length]
         cutoff_values = cutoff_values[:, -1:]  # select a threshold for each image in a batch
         attn_mask = torch.where(attentions > cutoff_values, 1., 0.)
-        attn_mask = attn_mask.unsqueeze(1).reshape(B, 1, w, h)
+        attn_mask = attn_mask.unsqueeze(1).reshape(B, 1, self.w_featmap, self.h_featmap)
         # print(f"attn_mask shape {attn_mask.shape}")
         attn_mask = torch.nn.functional.interpolate(attn_mask, size=(W, H), mode='nearest-exact')
         # print(f"attn_mask shape after interpolate {attn_mask.shape}")
         output = input_images * attn_mask.expand(-1, 3, -1, -1)
+        del attentions, values, idx, attn_mask
         return output
     
 
 if __name__ == '__main__':
     """For testing purpose"""
+    
     attentions = torch.tensor([
         [15., 0., 13., 8.],
         [7., 2., 0., 10.],
