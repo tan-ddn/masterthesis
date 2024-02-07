@@ -83,7 +83,7 @@ nice_user = False
 requirements = (GPURAM > 10000) && TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
 # requirements = (GPURAM > 10000) && (GPURAM < 20000) && POOL =="workstation"
 # requirements = TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
-requirements = (GPURAM > 10000)
+requirements = (GPURAM > 15000)
 
 
 # required number of CPU cores
@@ -93,7 +93,7 @@ request_cpus = 1
 request_gpus = 1
 
 # required CPU RAM
-request_memory = 80 GB
+request_memory = 128 GB
 
 # required Disk space
 
@@ -129,8 +129,8 @@ load_profile = True
 # if you want to use a range of arguments, 
 # you can add them like this, one set of argumetns per line
 queue 1 arguments from (
-# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/6 --fixation_top 0.5
-# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/7 --fixation_top 0.1 --fixation_grayscale
---run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/8 --fixation_top 0.5 --fixation_grayscale
---run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/9 --fixation_top 0.2 --fixation_grayscale
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/10 --fixation_top 0.5 --batch-size 1280 --epoch-length 999 --eval-period-iterations 1000
+--run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/11 --fixation_top 0.5 --batch-size 1280 --epoch-length 999 --eval-period-iterations 1000 --image_grayscale
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/12 --fixation_top 0.2 --batch-size 1280 --epoch-length 999 --eval-period-iterations 1000 --image_grayscale
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/dinov2/fixation/14 --fixation_top 0.1 --batch-size 1280 --epoch-length 999 --eval-period-iterations 1000 --image_grayscale
 )

@@ -19,6 +19,7 @@ import torch.utils.checkpoint
 from torch.nn.init import trunc_normal_
 
 from dinov2_tan.block import MemEffAttention, NestedTensorBlock as Block
+from dinov2_tan.fixation_layer import get_mask_from_top_attn
 
 
 sys.path.append("/home/students/tnguyen/masterthesis")
@@ -71,6 +72,7 @@ class DinoVisionTransformer(nn.Module):
         num_register_tokens=0,
         interpolate_antialias=False,
         interpolate_offset=0.1,
+        top_attention=0.1,
     ):
         """
         Args:
@@ -108,12 +110,13 @@ class DinoVisionTransformer(nn.Module):
         self.num_register_tokens = num_register_tokens
         self.interpolate_antialias = interpolate_antialias
         self.interpolate_offset = interpolate_offset
+        self.top_attention = top_attention
 
         self.patch_embed = embed_layer(img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
-        num_patches = self.patch_embed.num_patches
+        self.num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + self.num_tokens, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + self.num_tokens, embed_dim))
         assert num_register_tokens >= 0
         self.register_tokens = (
             nn.Parameter(torch.zeros(1, num_register_tokens, embed_dim)) if num_register_tokens else None
@@ -295,11 +298,98 @@ class DinoVisionTransformer(nn.Module):
             outputs = self._get_intermediate_layers_not_chunked(x, n)
         second_last_layer_output = outputs[-2]
         last_blk = self.blocks[-1]
-        attn = last_blk(second_last_layer_output, return_attention=True)
+        attn, _ = last_blk(second_last_layer_output, return_attention=True)
         outputs = [self.norm(out) for out in outputs]
         class_tokens = [out[:, 0] for out in outputs]
         outputs = [out[:, 1 + self.num_register_tokens:] for out in outputs]
         return tuple(zip(outputs, class_tokens)), attn
+    
+    def _get_full_mask(self, mask: torch.Tensor):
+        mask = mask.unsqueeze(2).expand(-1, -1, self.embed_dim)
+        cls_token_mask = torch.ones(1, 1, self.embed_dim).to(mask.device)
+        register_tokens_mask = None
+        mask = torch.cat((cls_token_mask.expand(mask.shape[0], -1, -1), mask), dim=1)
+        if self.register_tokens is not None:
+            register_tokens_mask = (
+                torch.ones(1, self.num_register_tokens, self.embed_dim).to(mask.device)
+            )
+            mask = torch.cat(
+                (
+                    mask[:, :1],
+                    register_tokens_mask.expand(mask.shape[0], -1, -1),
+                    mask[:, 1:],
+                ),
+                dim=1,
+            )
+        del cls_token_mask, register_tokens_mask
+        return mask
+
+    def _get_intermediate_layers_not_chunked_with_masked_feature(self, x, n=1):
+        x = self.prepare_tokens_with_masks(x)
+        # If n is an int, take the n last blocks. If it's a list, take them
+        output, total_block_len = [], len(self.blocks)
+        blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
+        is_masked = False
+        attn, mask = None, None
+        for i, blk in enumerate(self.blocks):
+            if i not in blocks_to_take:
+                x = blk(x)
+            else:
+                if not is_masked:
+                    attn, x = blk(x, return_attention=True)
+                    mask = get_mask_from_top_attn(attn, int(self.top_attention * self.num_patches))
+                    mask = self._get_full_mask(mask)
+                    masked_feature = x * mask
+                    output.append(masked_feature)
+                    is_masked = True
+                else:
+                    x = blk(x)
+                    output.append(x)
+
+        assert len(output) == len(blocks_to_take), f"only {len(output)} / {len(blocks_to_take)} blocks found"
+        del attn, mask
+        return output
+
+    def _get_intermediate_layers_chunked_with_masked_feature(self, x, n=1):
+        x = self.prepare_tokens_with_masks(x)
+        output, i, total_block_len = [], 0, len(self.blocks[-1])
+        # If n is an int, take the n last blocks. If it's a list, take them
+        blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
+        attn, mask = None, None
+        for block_chunk in self.blocks:
+            is_masked = False
+            for blk in block_chunk[i:]:  # Passing the nn.Identity()
+                if i not in blocks_to_take:
+                    x = blk(x)
+                else:
+                    if not is_masked:
+                        attn, x = blk(x, return_attention=True)
+                        mask = get_mask_from_top_attn(attn, int(self.top_attention * self.num_patches))
+                        mask = self._get_full_mask(mask)
+                        masked_feature = x * mask
+                        output.append(masked_feature)
+                        is_masked = True
+                    else:
+                        x = blk(x)
+                        output.append(x)
+                i += 1
+        assert len(output) == len(blocks_to_take), f"only {len(output)} / {len(blocks_to_take)} blocks found"
+        del attn, mask
+        return output
+
+    def get_intermediate_layers_with_masked_feature(
+        self,
+        x: torch.Tensor,
+        n: Union[int, Sequence] = 1,  # Layers or n last layers to take
+    ) -> Tuple[Union[torch.Tensor, Tuple[torch.Tensor]]]:
+        if self.chunked_blocks:
+            outputs = self._get_intermediate_layers_chunked_with_masked_feature(x, n)
+        else:
+            outputs = self._get_intermediate_layers_not_chunked_with_masked_feature(x, n)
+        outputs = [self.norm(out) for out in outputs]
+        class_tokens = [out[:, 0] for out in outputs]
+        outputs = [out[:, 1 + self.num_register_tokens:] for out in outputs]
+        return tuple(zip(outputs, class_tokens))
 
     def _get_intermediate_layers_not_chunked(self, x, n=1):
         x = self.prepare_tokens_with_masks(x)

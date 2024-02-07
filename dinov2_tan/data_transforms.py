@@ -67,6 +67,8 @@ def make_classification_train_transform(
     transforms_list = [transforms.RandomResizedCrop(crop_size, interpolation=interpolation)]
     if hflip_prob > 0.0:
         transforms_list.append(transforms.RandomHorizontalFlip(hflip_prob))
+    if grayscale:
+        transforms_list.append(transforms.Grayscale(num_output_channels=3))
     transforms_list.extend(
         [
             MaybeToTensor(),
@@ -93,4 +95,12 @@ def make_classification_eval_transform(
         MaybeToTensor(),
         make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
     ]
+    if grayscale:
+        transforms_list = [
+            transforms.Resize(resize_size, interpolation=interpolation),
+            transforms.CenterCrop(crop_size),
+            transforms.Grayscale(num_output_channels=3),
+            MaybeToTensor(),
+            make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
+        ]
     return transforms.Compose(transforms_list)

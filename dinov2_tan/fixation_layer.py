@@ -11,6 +11,7 @@ import sys
 import logging
 import os
 import torch
+import math
 
 from torch import Tensor
 from torch import nn
@@ -101,6 +102,27 @@ class Fixation(nn.Module):
         output = input_images * attn_mask.expand(-1, 3, -1, -1)
         del attentions, values, idx, attn_mask
         return output
+    
+
+def get_mask_from_top_attn(attn: Tensor, cutoff_length: int) -> Tensor:
+    B, NH, _, _ = attn.shape
+        
+    attentions = attn[:, :, 0, 1:].reshape(B, NH, -1)
+    # print(f"attentions shape {attentions.shape}")
+    attentions = torch.sum(attentions, dim=1)
+    # attn_length = int(math.sqrt(attentions.shape[-1]))
+    # print(f"attentions shape {attentions.shape}")
+    # return attentions
+
+    values, idx = torch.sort(attentions, descending=True)
+    """New version"""
+    cutoff_values = values[:, :cutoff_length]
+    cutoff_values = cutoff_values[:, -1:]  # select a threshold for each image in a batch
+    attn_mask = torch.where(attentions > cutoff_values, 1., 0.)
+    # attn_mask = attn_mask.unsqueeze(1).reshape(B, 1, attn_length, attn_length)
+    # print(f"attn_mask shape {attn_mask.shape}")
+    del attentions, values, idx, cutoff_values
+    return attn_mask
     
 
 if __name__ == '__main__':
