@@ -6,10 +6,10 @@
 from typing import Sequence
 
 import torch
-from torchvision import transforms
+from torchvision.transforms import v2
 
 
-class GaussianBlur(transforms.RandomApply):
+class GaussianBlur(v2.RandomApply):
     """
     Apply Gaussian Blur to the PIL image.
     """
@@ -17,11 +17,11 @@ class GaussianBlur(transforms.RandomApply):
     def __init__(self, *, p: float = 0.5, radius_min: float = 0.1, radius_max: float = 2.0):
         # NOTE: torchvision is applying 1 - probability to return the original image
         keep_p = 1 - p
-        transform = transforms.GaussianBlur(kernel_size=9, sigma=(radius_min, radius_max))
+        transform = v2.GaussianBlur(kernel_size=9, sigma=(radius_min, radius_max))
         super().__init__(transforms=[transform], p=keep_p)
 
 
-class MaybeToTensor(transforms.ToTensor):
+class MaybeToTensor(v2.ToTensor):
     """
     Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor, or keep as is if already a tensor.
     """
@@ -47,10 +47,10 @@ def make_normalize_transform(
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
     grayscale: bool = False,
-) -> transforms.Normalize:
+) -> v2.Normalize:
     if grayscale:
-        return transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-    return transforms.Normalize(mean=mean, std=std)
+        return v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+    return v2.Normalize(mean=mean, std=std)
 
 
 # This roughly matches torchvision's preset for classification training:
@@ -58,24 +58,32 @@ def make_normalize_transform(
 def make_classification_train_transform(
     *,
     crop_size: int = 224,
-    interpolation=transforms.InterpolationMode.BICUBIC,
+    interpolation=v2.InterpolationMode.BICUBIC,
     hflip_prob: float = 0.5,
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
     grayscale: bool = False,
+    norm = 'norm',
 ):
-    transforms_list = [transforms.RandomResizedCrop(crop_size, interpolation=interpolation)]
+    transforms_list = [v2.RandomResizedCrop(crop_size, interpolation=interpolation)]
     if hflip_prob > 0.0:
-        transforms_list.append(transforms.RandomHorizontalFlip(hflip_prob))
+        transforms_list.append(v2.RandomHorizontalFlip(hflip_prob))
     if grayscale:
-        transforms_list.append(transforms.Grayscale(num_output_channels=3))
-    transforms_list.extend(
-        [
-            MaybeToTensor(),
-            make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
-        ]
-    )
-    return transforms.Compose(transforms_list)
+        transforms_list.append(v2.Grayscale(num_output_channels=3))
+    if norm == 'norm':
+        transforms_list.extend(
+            [
+                MaybeToTensor(),
+                make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
+            ]
+        )
+    else:
+        transforms_list.extend(
+            [
+                MaybeToTensor(),
+            ]
+        )
+    return v2.Compose(transforms_list)
 
 
 # This matches (roughly) torchvision's preset for classification evaluation:
@@ -83,24 +91,39 @@ def make_classification_train_transform(
 def make_classification_eval_transform(
     *,
     resize_size: int = 256,
-    interpolation=transforms.InterpolationMode.BICUBIC,
+    interpolation=v2.InterpolationMode.BICUBIC,
     crop_size: int = 224,
     mean: Sequence[float] = IMAGENET_DEFAULT_MEAN,
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
     grayscale: bool = False,
-) -> transforms.Compose:
-    transforms_list = [
-        transforms.Resize(resize_size, interpolation=interpolation),
-        transforms.CenterCrop(crop_size),
-        MaybeToTensor(),
-        make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
-    ]
-    if grayscale:
+    norm = 'norm',
+) -> v2.Compose:
+    if norm == 'norm':
         transforms_list = [
-            transforms.Resize(resize_size, interpolation=interpolation),
-            transforms.CenterCrop(crop_size),
-            transforms.Grayscale(num_output_channels=3),
+            v2.Resize(resize_size, interpolation=interpolation),
+            v2.CenterCrop(crop_size),
             MaybeToTensor(),
             make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
         ]
-    return transforms.Compose(transforms_list)
+        if grayscale:
+            transforms_list = [
+                v2.Resize(resize_size, interpolation=interpolation),
+                v2.CenterCrop(crop_size),
+                v2.Grayscale(num_output_channels=3),
+                MaybeToTensor(),
+                make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
+            ]
+    else:
+        transforms_list = [
+            v2.Resize(resize_size, interpolation=interpolation),
+            v2.CenterCrop(crop_size),
+            MaybeToTensor(),
+        ]
+        if grayscale:
+            transforms_list = [
+                v2.Resize(resize_size, interpolation=interpolation),
+                v2.CenterCrop(crop_size),
+                v2.Grayscale(num_output_channels=3),
+                MaybeToTensor(),
+            ]
+    return v2.Compose(transforms_list)

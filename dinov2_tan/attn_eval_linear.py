@@ -55,6 +55,7 @@ from dinov2_lib.dinov2.eval.setup import get_args_parser as get_setup_args_parse
 from dinov2_lib.dinov2.eval.metrics import MetricType, build_metric
 from dinov2_lib.dinov2.logging import MetricLogger
 from dinov2_tan.data_transforms import make_classification_eval_transform, make_classification_train_transform
+from dinov2_tan.pulse2percept_layer import image2percept
 
 
 logger = logging.getLogger("dinov2")
@@ -171,6 +172,9 @@ def get_args_parser(
     parser.add_argument("--image_grayscale", action="store_true", help="Image in grayscale or rgb. Default is rgb.")
     parser.add_argument("--n_last_blocks", default=4, type=int, help="Maximun number of last blocks used for linear probing.")
     parser.add_argument("--run_on_cluster", action="store_true", help="Run on cluster or local machine. Default: local machine.")
+    parser.add_argument("--pulse2percept", action="store_true", help="Pulse2percept between dataset and dinov2.")
+    parser.add_argument("--norm", default="norm", type=str,
+        help='Normalization method for images: "norm", "no_norm", "norm_after_p2p. Default: "norm"')
     parser.set_defaults(
         train_dataset_str="ImageNetWds",
         val_dataset_str="ImageNetWds",
@@ -195,6 +199,8 @@ def get_args_parser(
         image_grayscale=False,
         n_last_blocks=4,
         run_on_cluster=False,
+        pulse2percept=False,
+        norm='norm',
     )
     return parser
 
@@ -225,17 +231,20 @@ class ModelLastSelfAttentionFixation(nn.Module):
 
 
 class ModelWithMaskedLastFeature(nn.Module):
-    def __init__(self, feature_model, top_attention, n_last_blocks, autocast_ctx):
+    def __init__(self, feature_model, top_attention, n_last_blocks, autocast_ctx, args):
         super().__init__()
         self.feature_model = feature_model
         self.feature_model.top_attention = top_attention
         self.feature_model.eval()
         self.n_last_blocks = n_last_blocks
         self.autocast_ctx = autocast_ctx
+        self.args = args
 
     def forward(self, images):
         with torch.inference_mode():
             with self.autocast_ctx():
+                if self.args.pulse2percept:
+                    images = image2percept(images, self.args)
                 features = self.feature_model.get_intermediate_layers_with_masked_feature(
                     images, self.n_last_blocks,
                 )
@@ -441,10 +450,16 @@ class ImageNetWds(wds.WebDataset):
 def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type):
     resize_size = int(args.image_size * 1.15)
     if test_dataset_str == 'ImageNetWds':
-        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale)
-        test_data_path = r'/images/innoretvision/eye/imagenet_patch/val/imagenet-val-{000000..000002}.tar'
+        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
+        test_data_dir = r'/images/innoretvision/eye/imagenet_patch/val/'
+        test_data_num = r'002'
         if args.run_on_cluster:
-            test_data_path = r'/images/innoretvision/eye/imagenet_patch/val/imagenet-val-{000000..000006}.tar'
+            test_data_num = r'006'
+        if args.pulse2percept:
+            test_data_dir = r'/images/innoretvision/eye/imagenet_patch/p2p/val_shards/'
+            if args.run_on_cluster:
+                test_data_num = r'002'
+        test_data_path = test_data_dir + 'imagenet-val-{000000..000' + test_data_num + '}.tar'
         pil_dataset = (
             ImageNetWds(
             # wids.ShardListDataset(
@@ -476,7 +491,7 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
     else:
         test_dataset = make_dataset(
             dataset_str=test_dataset_str,
-            transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale),
+            transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
         )
         test_data_loader = make_data_loader(
             dataset=test_dataset,
@@ -633,11 +648,17 @@ def run_eval_linear(
         assert len(test_metric_types) == len(test_dataset_strs)
     assert len(test_dataset_strs) == len(test_class_mapping_fpaths)
 
-    train_transform = make_classification_train_transform(crop_size=args.image_size, grayscale=args.image_grayscale)
+    train_transform = make_classification_train_transform(crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
     if train_dataset_str == 'ImageNetWds':
-        train_data_path = r'/images/innoretvision/eye/imagenet_patch/train/imagenet-train-{000000..000040}.tar'
+        train_data_dir = r'/images/innoretvision/eye/imagenet_patch/train/'
+        train_data_num = r'020'
         if args.run_on_cluster:
-            train_data_path = r'/images/innoretvision/eye/imagenet_patch/train/imagenet-train-{000000..000146}.tar'
+            train_data_num = r'146'
+        if args.pulse2percept:
+            train_data_dir = r'/images/innoretvision/eye/imagenet_patch/p2p/train_shards/'
+            if args.run_on_cluster:
+                train_data_num = r'102'
+        train_data_path = train_data_dir + 'imagenet-train-{000000..000' + train_data_num + '}.tar'
         pil_dataset = (
             ImageNetWds(
             # wids.ShardListDataset(
@@ -678,7 +699,7 @@ def run_eval_linear(
     fixations = None
     # fixation_model = ModelLastSelfAttentionFixation(model, args, 2, autocast_ctx).to(args.device)
     # feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
-    feature_model = ModelWithMaskedLastFeature(model, args.fixation_top, n_last_blocks, autocast_ctx)
+    feature_model = ModelWithMaskedLastFeature(model, args.fixation_top, n_last_blocks, autocast_ctx, args)
     if train_dataset_str == 'ImageNetWds':
         for image, label in train_dataset:
             break
