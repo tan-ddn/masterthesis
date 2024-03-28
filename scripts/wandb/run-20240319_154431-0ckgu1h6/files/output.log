@@ -1,0 +1,47 @@
+INFO: Starting training:
+        Epochs:          50
+        Batch size:      512
+        Learning rate:   0.001
+        Training size:   1281167
+        Validation size: 50000
+        Checkpoints:     True
+        Device:          cuda
+        Images scaling:  1
+        Mixed Precision: False
+Epoch 1/50:   0%|          | 0/327978752 [00:34<?, ?img/s]
+ERROR: Detected OutOfMemoryError! Enabling checkpointing to reduce memory usage, but this slows down training. Consider enabling AMP (--amp) for fast and memory efficient training
+Traceback (most recent call last):
+  File "/home/students/tnguyen/masterthesis/unet/train_surrogate.py", line 267, in <module>
+    train_model(
+  File "/home/students/tnguyen/masterthesis/unet/train_surrogate.py", line 156, in train_model
+    masks_pred = model(images)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/students/tnguyen/masterthesis/unet/unet_model.py", line 56, in forward
+    x = self.up2(x, x1)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/students/tnguyen/masterthesis/unet/unet_parts.py", line 68, in forward
+    return self.conv(x)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/students/tnguyen/masterthesis/unet/unet_parts.py", line 25, in forward
+    return self.double_conv(x)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/container.py", line 217, in forward
+    input = module(input)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/modules/batchnorm.py", line 171, in forward
+    return F.batch_norm(
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torch/nn/functional.py", line 2450, in batch_norm
+    return torch.batch_norm(
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.53 GiB (GPU 0; 23.64 GiB total capacity; 23.18 GiB already allocated; 64.44 MiB free; 23.32 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "/home/students/tnguyen/masterthesis/unet/train_surrogate.py", line 284, in <module>
+    model.use_checkpointing()
+  File "/home/students/tnguyen/masterthesis/unet/unet_model.py", line 73, in use_checkpointing
+    self.inc = torch.utils.checkpoint(self.inc)
+TypeError: 'module' object is not callable

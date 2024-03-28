@@ -1,0 +1,225 @@
+{
+    "os": "Linux-6.5.0-26-generic-x86_64-with-glibc2.35",
+    "python": "3.9.18",
+    "heartbeatAt": "2024-03-22T11:36:03.667558",
+    "startedAt": "2024-03-22T11:36:02.676805",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--run_on_cluster",
+        "--output-dir",
+        "/work/scratch/tnguyen/unet/surrogate/1/",
+        "--batch-size",
+        "256",
+        "--epochs",
+        "50",
+        "--learning-rate",
+        "1e-3",
+        "--weight-decay",
+        "0"
+    ],
+    "state": "running",
+    "program": "/home/students/tnguyen/masterthesis/unet/train_surrogate.py",
+    "codePath": "unet/train_surrogate.py",
+    "git": {
+        "remote": "git@git.lfb.rwth-aachen.de:tnguyen/masterthesis.git",
+        "commit": "0b684bec024866f24d03cf0dbad04d6184eec94e"
+    },
+    "email": null,
+    "root": "/home/students/tnguyen/masterthesis",
+    "host": "abacus",
+    "username": "tnguyen",
+    "executable": "/work/scratch/tnguyen/miniconda3/envs/dinov2/bin/python",
+    "cpu_count": 16,
+    "cpu_count_logical": 32,
+    "cpu_freq": {
+        "current": 1400.2554687499999,
+        "min": 1200.0,
+        "max": 3200.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2000.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2093.308,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1995.951,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2003.929,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1196.382,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2000.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1197.571,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2095.516,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2092.954,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1654.454,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1995.65,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 2095.433,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1900.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1197.381,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        },
+        {
+            "current": 1200.0,
+            "min": 1200.0,
+            "max": 3200.0
+        }
+    ],
+    "disk": {
+        "total": 164.82173538208008,
+        "used": 130.40432357788086
+    },
+    "gpu": "NVIDIA RTX A5000",
+    "gpu_count": 3,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA RTX A5000",
+            "memory_total": 25757220864
+        },
+        {
+            "name": "NVIDIA RTX A5000",
+            "memory_total": 25757220864
+        },
+        {
+            "name": "NVIDIA RTX A5000",
+            "memory_total": 25757220864
+        }
+    ],
+    "memory": {
+        "total": 503.7584419250488
+    }
+}

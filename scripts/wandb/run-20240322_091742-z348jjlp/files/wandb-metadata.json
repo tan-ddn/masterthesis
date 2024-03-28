@@ -1,0 +1,177 @@
+{
+    "os": "Linux-6.5.0-17-generic-x86_64-with-glibc2.35",
+    "python": "3.9.18",
+    "heartbeatAt": "2024-03-22T08:17:43.020711",
+    "startedAt": "2024-03-22T08:17:42.241763",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--run_on_cluster",
+        "--output-dir",
+        "/work/scratch/tnguyen/unet/surrogate/4/",
+        "--batch-size",
+        "256",
+        "--epochs",
+        "50",
+        "--learning-rate",
+        "1e-6",
+        "--weight-decay",
+        "0"
+    ],
+    "state": "running",
+    "program": "/home/students/tnguyen/masterthesis/unet/train_surrogate.py",
+    "codePath": "unet/train_surrogate.py",
+    "git": {
+        "remote": "git@git.lfb.rwth-aachen.de:tnguyen/masterthesis.git",
+        "commit": "0b684bec024866f24d03cf0dbad04d6184eec94e"
+    },
+    "email": null,
+    "root": "/home/students/tnguyen/masterthesis",
+    "host": "pc63",
+    "username": "tnguyen",
+    "executable": "/work/scratch/tnguyen/miniconda3/envs/dinov2/bin/python",
+    "cpu_count": 16,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 3968.339416666667,
+        "min": 800.0,
+        "max": 4716.666666666667
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 4207.224,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4644.147,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4584.218,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 1710.949,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4900.0,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 4848.155,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 800.603,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 3949.556,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 4555.925,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4882.382,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4899.987,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4900.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4859.711,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 2556.763,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 4855.976,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 2869.216,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 3699.939,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 3801.441,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 3700.592,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 3783.268,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 2650.975,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 3880.413,
+            "min": 800.0,
+            "max": 3900.0
+        },
+        {
+            "current": 3552.792,
+            "min": 800.0,
+            "max": 3900.0
+        }
+    ],
+    "disk": {
+        "total": 467.8895797729492,
+        "used": 371.5720100402832
+    },
+    "gpu": "NVIDIA RTX A5000",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA RTX A5000",
+            "memory_total": 25757220864
+        }
+    ],
+    "memory": {
+        "total": 125.53032684326172
+    }
+}

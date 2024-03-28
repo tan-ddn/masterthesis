@@ -1,0 +1,17 @@
+2024-03-25 14:26:59,638 INFO    MainThread:3101439 [wandb_setup.py:_flush():68] Configure stats pid to 3101439
+2024-03-25 14:26:59,638 INFO    MainThread:3101439 [wandb_setup.py:_flush():68] Loading settings from /home/students/tnguyen/.config/wandb/settings
+2024-03-25 14:26:59,638 INFO    MainThread:3101439 [wandb_setup.py:_flush():68] Loading settings from /home/students/tnguyen/masterthesis/scripts/wandb/settings
+2024-03-25 14:26:59,638 INFO    MainThread:3101439 [wandb_setup.py:_flush():68] Loading settings from environment variables: {'_require_service': 'True'}
+2024-03-25 14:26:59,638 INFO    MainThread:3101439 [wandb_setup.py:_flush():68] Inferring run settings from compute environment: {'program_relpath': 'unet/train_surrogate.py', 'program': '/home/students/tnguyen/masterthesis/unet/train_surrogate.py'}
+2024-03-25 14:26:59,638 INFO    MainThread:3101439 [wandb_setup.py:_flush():68] Applying login settings: {'anonymous': 'must'}
+2024-03-25 14:26:59,639 INFO    MainThread:3101439 [wandb_init.py:_log_setup():476] Logging user logs to /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_142659-jnp0xs89/logs/debug.log
+2024-03-25 14:26:59,639 INFO    MainThread:3101439 [wandb_init.py:_log_setup():477] Logging internal logs to /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_142659-jnp0xs89/logs/debug-internal.log
+2024-03-25 14:26:59,639 INFO    MainThread:3101439 [wandb_init.py:init():516] calling init triggers
+2024-03-25 14:26:59,639 INFO    MainThread:3101439 [wandb_init.py:init():519] wandb.init called with sweep_config: {}
+config: {}
+2024-03-25 14:26:59,640 INFO    MainThread:3101439 [wandb_init.py:init():569] starting backend
+2024-03-25 14:26:59,640 INFO    MainThread:3101439 [wandb_init.py:init():573] setting up manager
+2024-03-25 14:26:59,643 INFO    MainThread:3101439 [backend.py:_multiprocessing_setup():102] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-03-25 14:26:59,647 INFO    MainThread:3101439 [wandb_init.py:init():580] backend started and connected
+2024-03-25 14:26:59,652 INFO    MainThread:3101439 [wandb_init.py:init():658] updated telemetry
+2024-03-25 14:26:59,722 INFO    MainThread:3101439 [wandb_init.py:init():693] communicating run to backend with 60 second timeout

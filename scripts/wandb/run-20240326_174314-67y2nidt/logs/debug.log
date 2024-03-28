@@ -1,0 +1,27 @@
+2024-03-26 17:43:14,538 INFO    MainThread:3766689 [wandb_setup.py:_flush():68] Configure stats pid to 3766689
+2024-03-26 17:43:14,538 INFO    MainThread:3766689 [wandb_setup.py:_flush():68] Loading settings from /home/students/tnguyen/.config/wandb/settings
+2024-03-26 17:43:14,538 INFO    MainThread:3766689 [wandb_setup.py:_flush():68] Loading settings from /home/students/tnguyen/masterthesis/scripts/wandb/settings
+2024-03-26 17:43:14,538 INFO    MainThread:3766689 [wandb_setup.py:_flush():68] Loading settings from environment variables: {'_require_service': 'True'}
+2024-03-26 17:43:14,538 INFO    MainThread:3766689 [wandb_setup.py:_flush():68] Inferring run settings from compute environment: {'program_relpath': 'unet/train_surrogate.py', 'program': '/home/students/tnguyen/masterthesis/unet/train_surrogate.py'}
+2024-03-26 17:43:14,538 INFO    MainThread:3766689 [wandb_setup.py:_flush():68] Applying login settings: {'anonymous': 'must'}
+2024-03-26 17:43:14,539 INFO    MainThread:3766689 [wandb_init.py:_log_setup():476] Logging user logs to /home/students/tnguyen/masterthesis/scripts/wandb/run-20240326_174314-67y2nidt/logs/debug.log
+2024-03-26 17:43:14,539 INFO    MainThread:3766689 [wandb_init.py:_log_setup():477] Logging internal logs to /home/students/tnguyen/masterthesis/scripts/wandb/run-20240326_174314-67y2nidt/logs/debug-internal.log
+2024-03-26 17:43:14,539 INFO    MainThread:3766689 [wandb_init.py:init():516] calling init triggers
+2024-03-26 17:43:14,539 INFO    MainThread:3766689 [wandb_init.py:init():519] wandb.init called with sweep_config: {}
+config: {}
+2024-03-26 17:43:14,540 INFO    MainThread:3766689 [wandb_init.py:init():569] starting backend
+2024-03-26 17:43:14,540 INFO    MainThread:3766689 [wandb_init.py:init():573] setting up manager
+2024-03-26 17:43:14,543 INFO    MainThread:3766689 [backend.py:_multiprocessing_setup():102] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-03-26 17:43:14,549 INFO    MainThread:3766689 [wandb_init.py:init():580] backend started and connected
+2024-03-26 17:43:14,555 INFO    MainThread:3766689 [wandb_init.py:init():658] updated telemetry
+2024-03-26 17:43:14,638 INFO    MainThread:3766689 [wandb_init.py:init():693] communicating run to backend with 60 second timeout
+2024-03-26 17:43:15,391 INFO    MainThread:3766689 [wandb_run.py:_on_init():2000] communicating current version
+2024-03-26 17:43:15,582 INFO    MainThread:3766689 [wandb_run.py:_on_init():2004] got version response upgrade_message: "wandb version 0.16.5 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-03-26 17:43:15,582 INFO    MainThread:3766689 [wandb_init.py:init():728] starting run threads in backend
+2024-03-26 17:43:15,749 INFO    MainThread:3766689 [wandb_run.py:_console_start():1980] atexit reg
+2024-03-26 17:43:15,749 INFO    MainThread:3766689 [wandb_run.py:_redirect():1838] redirect: SettingsConsole.WRAP_RAW
+2024-03-26 17:43:15,749 INFO    MainThread:3766689 [wandb_run.py:_redirect():1903] Wrapping output streams.
+2024-03-26 17:43:15,750 INFO    MainThread:3766689 [wandb_run.py:_redirect():1925] Redirects installed.
+2024-03-26 17:43:15,750 INFO    MainThread:3766689 [wandb_init.py:init():765] run started, returning control to user process
+2024-03-26 17:43:15,751 INFO    MainThread:3766689 [wandb_run.py:_config_callback():1160] config_cb None None {'epochs': 50, 'batch_size': 256, 'learning_rate': 0.001, 'save_checkpoint': True, 'img_scale': 1, 'amp': False}

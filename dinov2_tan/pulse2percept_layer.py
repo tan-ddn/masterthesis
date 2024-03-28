@@ -11,7 +11,6 @@ import time
 import cv2
 import matplotlib.pyplot as plt
 # import torchvision.io.image as tv_io_image
-
 from PIL import Image
 from pathlib import Path
 from numpy import pi
@@ -93,8 +92,8 @@ def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
     # # percept = torch.nn.functional.interpolate(percept, size=(args.patch_size, args.patch_size), mode='bilinear')
     # # print(f'percept shape {percept.shape}')  # shape (N * num_patches, 1, args.patch_size, args.patch_size)
     percept = pypatchify.unpatchify_from_batches(percept, (args.image_size, args.image_size, 1), batch_dim=0)
-    print(f'percept shape {percept.shape}')  # shape (N, C, args.image_size, args.image_size)
-    del image, patches
+    # print(f'percept shape {percept.shape}')  # shape (N, C, args.image_size, args.image_size)
+    del patches
     # return percept.expand(-1, 3, -1, -1)
     return np.tile(percept, (1, 1, 1, 3))
 
@@ -114,7 +113,7 @@ def img_generator(files, image_size):
 def batch_imgs_generator(files, args):
     # imgs = torch.zeros((args.batch_size, 3, args.image_size, args.image_size), dtype=torch.float32)
     imgs = np.zeros((args.batch_size, args.image_size, args.image_size, 3))
-    img_paths = []
+    img_paths = [None] * args.batch_size
     i = 0
     for image_file in files:
         image_dir, image_name = os.path.split(image_file)
@@ -130,7 +129,7 @@ def batch_imgs_generator(files, args):
         """Create an output directory if it doesn't exist"""
         Path(saved_dir).mkdir(parents=True, exist_ok=True)
 
-        print(f'{image_file}')
+        # print(f'{image_file}')
         # img = read_image(image_file, mode=tv_io_image.ImageReadMode.RGB)
         # with open(image_file, 'rb') as f:
         #     img = Image.open(f)
@@ -156,15 +155,15 @@ def batch_imgs_generator(files, args):
         # plt.savefig(saved_dir + '/p2p_img_' + image_name, bbox_inches='tight', pad_inches=0)
         # plt.close()
 
-        img_paths.append(saved_dir + image_name)
+        img_paths[i] = saved_dir + image_name
         i += 1
         if i == args.batch_size:
             i = 0
             yield img_paths, imgs
-    if i != 0:
-        yield img_paths, imgs[:len(img_paths)]
+    if i > 0:
+        yield img_paths, imgs[:len(img_paths), :, :, :]
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser('Create percept from pulse2percept')
     parser.add_argument("--image_path", default='/images/PublicDatasets/imagenet/', type=str, help="Path of the image to load.")
     parser.add_argument("--image_size", default=224, type=int, help="Resize image.")
@@ -229,6 +228,7 @@ if __name__ == '__main__':
                 continue
             # save_image(percept[i], saved_filenames[i])
             cv2.imwrite(saved_filenames[i], percept[i]) 
+            print(f'{saved_filenames[i]}')
     
         del imgs, percept, saved_filenames
         torch.cuda.empty_cache()
@@ -237,3 +237,7 @@ if __name__ == '__main__':
     if args.time_track:
         end = time.time()
         print(f"Time elapsed: {end - start}")
+
+
+if __name__ == '__main__':
+    main()

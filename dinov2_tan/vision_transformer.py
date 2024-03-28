@@ -322,7 +322,7 @@ class DinoVisionTransformer(nn.Module):
                 dim=1,
             )
         del cls_token_mask, register_tokens_mask
-        return mask
+        return mask.to(torch.float32)
 
     def _get_intermediate_layers_not_chunked_with_masked_feature(self, x, n=1):
         x = self.prepare_tokens_with_masks(x)
@@ -336,15 +336,26 @@ class DinoVisionTransformer(nn.Module):
                 x = blk(x)
             else:
                 if not is_masked:
-                    attn, x = blk(x, return_attention=True)
-                    mask = get_mask_from_top_attn(attn, int(self.top_attention * self.num_patches))
+                    attn = blk(x, return_attention=True)
+                    x = blk(x)
+                    # print(x.type())
+                    mask = get_mask_from_top_attn(attn, int(self.top_attention * x.shape[1]))  # length of the patches
+                    # print(f'Non-zero elements {torch.count_nonzero(mask)}')
                     mask = self._get_full_mask(mask)
                     masked_feature = x * mask
-                    output.append(masked_feature)
+                    # """Compare the x and masked_feature matrices"""
+                    # print(f"Blk {i}")
+                    # mat_A = x
+                    # mat_B = masked_feature
+                    # print(mat_A.shape, mat_B.shape)
+                    # print(f"compare x and masked_feature: {torch.allclose(mat_A, mat_B)}")
+                    # print(f"similar percentage: {torch.sum(torch.eq(mat_A, mat_B)).item()/mat_A.nelement()}")
+                    # exit()
+                    x = masked_feature
                     is_masked = True
                 else:
                     x = blk(x)
-                    output.append(x)
+                output.append(x)
 
         assert len(output) == len(blocks_to_take), f"only {len(output)} / {len(blocks_to_take)} blocks found"
         del attn, mask
@@ -364,7 +375,8 @@ class DinoVisionTransformer(nn.Module):
                 else:
                     if not is_masked:
                         attn, x = blk(x, return_attention=True)
-                        mask = get_mask_from_top_attn(attn, int(self.top_attention * self.num_patches))
+                        mask = get_mask_from_top_attn(attn, int(self.top_attention * x.shape[1]))  # length of the patches
+                        # print(f'Non-zero elements {torch.count_nonzero(mask)}')
                         mask = self._get_full_mask(mask)
                         masked_feature = x * mask
                         output.append(masked_feature)

@@ -1,0 +1,15 @@
+INFO: Starting training:
+        Epochs:          50
+        Batch size:      512
+        Learning rate:   1e-05
+        Training size:   1281167
+        Validation size: 50000
+        Checkpoints:     True
+        Device:          cuda
+        Images scaling:  1
+        Mixed Precision: False
+Epoch 1/50:   0%|          | 0/327978752 [00:35<?, ?img/s]
+ERROR: Detected OutOfMemoryError! Enabling checkpointing to reduce memory usage, but this slows down training. Consider enabling AMP (--amp) for fast and memory efficient training
+Traceback (most recent call last):
+  File "/home/students/tnguyen/masterthesis/unet/train_surrogate.py", line 267, in <module>
+    train_model(

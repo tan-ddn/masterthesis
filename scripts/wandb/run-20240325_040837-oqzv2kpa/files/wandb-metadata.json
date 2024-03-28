@@ -1,0 +1,97 @@
+{
+    "os": "Linux-6.5.0-26-generic-x86_64-with-glibc2.35",
+    "python": "3.9.18",
+    "heartbeatAt": "2024-03-25T03:08:38.885959",
+    "startedAt": "2024-03-25T03:08:37.983522",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--run_on_cluster",
+        "--output-dir",
+        "/work/scratch/tnguyen/unet/surrogate/4/",
+        "--batch-size",
+        "256",
+        "--epochs",
+        "50",
+        "--learning-rate",
+        "1e-6",
+        "--weight-decay",
+        "0"
+    ],
+    "state": "running",
+    "program": "/home/students/tnguyen/masterthesis/unet/train_surrogate.py",
+    "codePath": "unet/train_surrogate.py",
+    "git": {
+        "remote": "git@git.lfb.rwth-aachen.de:tnguyen/masterthesis.git",
+        "commit": "0b684bec024866f24d03cf0dbad04d6184eec94e"
+    },
+    "email": null,
+    "root": "/home/students/tnguyen/masterthesis",
+    "host": "pc34",
+    "username": "tnguyen",
+    "executable": "/work/scratch/tnguyen/miniconda3/envs/dinov2/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 3947.99175,
+        "min": 800.0,
+        "max": 4900.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3700.658,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4291.14,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4298.502,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 4301.829,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 3699.97,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 3892.602,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 3700.003,
+            "min": 800.0,
+            "max": 4900.0
+        },
+        {
+            "current": 3699.23,
+            "min": 800.0,
+            "max": 4900.0
+        }
+    ],
+    "disk": {
+        "total": 456.8844680786133,
+        "used": 360.2264099121094
+    },
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3090",
+            "memory_total": 25769803776
+        }
+    ],
+    "memory": {
+        "total": 62.6964225769043
+    }
+}

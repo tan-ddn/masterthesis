@@ -1,0 +1,60 @@
+2024-03-25 20:10:59,925 INFO    StreamThr :322766 [internal.py:wandb_internal():88] W&B internal server running at pid: 322766, started at: 2024-03-25 20:10:59.923695
+2024-03-25 20:10:59,926 DEBUG   HandlerThread:322766 [handler.py:handle_request():139] handle_request: status
+2024-03-25 20:10:59,928 DEBUG   SenderThread:322766 [sender.py:send_request():317] send_request: status
+2024-03-25 20:10:59,929 INFO    WriterThread:322766 [datastore.py:open_for_write():75] open: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/run-acdp0x55.wandb
+2024-03-25 20:10:59,930 DEBUG   SenderThread:322766 [sender.py:send():303] send: header
+2024-03-25 20:10:59,952 DEBUG   SenderThread:322766 [sender.py:send():303] send: run
+2024-03-25 20:10:59,956 INFO    SenderThread:322766 [sender.py:_maybe_setup_resume():593] checking resume status for None/U-Net/acdp0x55
+2024-03-25 20:11:00,684 DEBUG   HandlerThread:322766 [handler.py:handle_request():139] handle_request: check_version
+2024-03-25 20:11:00,685 INFO    SenderThread:322766 [dir_watcher.py:__init__():216] watching files in: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files
+2024-03-25 20:11:00,685 INFO    SenderThread:322766 [sender.py:_start_run_threads():928] run started: acdp0x55 with start time 1711393859.918964
+2024-03-25 20:11:00,685 DEBUG   SenderThread:322766 [sender.py:send():303] send: summary
+2024-03-25 20:11:00,688 INFO    SenderThread:322766 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2024-03-25 20:11:00,688 DEBUG   SenderThread:322766 [sender.py:send_request():317] send_request: check_version
+2024-03-25 20:11:00,792 DEBUG   HandlerThread:322766 [handler.py:handle_request():139] handle_request: run_start
+2024-03-25 20:11:00,809 DEBUG   HandlerThread:322766 [system_info.py:__init__():31] System info init
+2024-03-25 20:11:00,809 DEBUG   HandlerThread:322766 [system_info.py:__init__():46] System info init done
+2024-03-25 20:11:00,809 INFO    HandlerThread:322766 [system_monitor.py:start():150] Starting system monitor
+2024-03-25 20:11:00,810 INFO    SystemMonitor:322766 [system_monitor.py:_start():116] Starting system asset monitoring threads
+2024-03-25 20:11:00,810 INFO    HandlerThread:322766 [system_monitor.py:probe():168] Collecting system info
+2024-03-25 20:11:00,811 INFO    SystemMonitor:322766 [interfaces.py:start():168] Started cpu
+2024-03-25 20:11:00,812 INFO    SystemMonitor:322766 [interfaces.py:start():168] Started disk
+2024-03-25 20:11:00,812 INFO    SystemMonitor:322766 [interfaces.py:start():168] Started gpu
+2024-03-25 20:11:00,813 INFO    SystemMonitor:322766 [interfaces.py:start():168] Started memory
+2024-03-25 20:11:00,813 INFO    SystemMonitor:322766 [interfaces.py:start():168] Started network
+2024-03-25 20:11:00,820 DEBUG   HandlerThread:322766 [system_info.py:probe():195] Probing system
+2024-03-25 20:11:00,829 DEBUG   HandlerThread:322766 [system_info.py:_probe_git():180] Probing git
+2024-03-25 20:11:00,853 DEBUG   HandlerThread:322766 [system_info.py:_probe_git():188] Probing git done
+2024-03-25 20:11:00,853 DEBUG   HandlerThread:322766 [system_info.py:probe():241] Probing system done
+2024-03-25 20:11:00,853 DEBUG   HandlerThread:322766 [system_monitor.py:probe():177] {'os': 'Linux-6.5.0-26-generic-x86_64-with-glibc2.35', 'python': '3.9.18', 'heartbeatAt': '2024-03-25T19:11:00.820782', 'startedAt': '2024-03-25T19:10:59.888739', 'docker': None, 'cuda': None, 'args': ('--run_on_cluster', '--output-dir', '/work/scratch/tnguyen/unet/surrogate/7/', '--batch-size', '256', '--epochs', '50', '--learning-rate', '1e-9', '--weight-decay', '0'), 'state': 'running', 'program': '/home/students/tnguyen/masterthesis/unet/train_surrogate.py', 'codePath': 'unet/train_surrogate.py', 'git': {'remote': 'git@git.lfb.rwth-aachen.de:tnguyen/masterthesis.git', 'commit': '0b684bec024866f24d03cf0dbad04d6184eec94e'}, 'email': None, 'root': '/home/students/tnguyen/masterthesis', 'host': 'pc170', 'username': 'tnguyen', 'executable': '/work/scratch/tnguyen/miniconda3/envs/dinov2/bin/python', 'cpu_count': 16, 'cpu_count_logical': 24, 'cpu_freq': {'current': 1020.4017083333334, 'min': 800.0, 'max': 4716.666666666667}, 'cpu_freq_per_core': [{'current': 1783.471, 'min': 800.0, 'max': 5100.0}, {'current': 2276.422, 'min': 800.0, 'max': 5100.0}, {'current': 2602.556, 'min': 800.0, 'max': 5100.0}, {'current': 800.0, 'min': 800.0, 'max': 5100.0}, {'current': 800.474, 'min': 800.0, 'max': 5200.0}, {'current': 800.0, 'min': 800.0, 'max': 5200.0}, {'current': 884.084, 'min': 800.0, 'max': 5200.0}, {'current': 2367.869, 'min': 800.0, 'max': 5200.0}, {'current': 2098.138, 'min': 800.0, 'max': 5100.0}, {'current': 800.0, 'min': 800.0, 'max': 5100.0}, {'current': 800.0, 'min': 800.0, 'max': 5100.0}, {'current': 2224.743, 'min': 800.0, 'max': 5100.0}, {'current': 2386.289, 'min': 800.0, 'max': 5100.0}, {'current': 800.0, 'min': 800.0, 'max': 5100.0}, {'current': 2149.566, 'min': 800.0, 'max': 5100.0}, {'current': 800.0, 'min': 800.0, 'max': 5100.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}, {'current': 800.0, 'min': 800.0, 'max': 3900.0}], 'disk': {'total': 467.8895797729492, 'used': 336.11451721191406}, 'gpu': 'NVIDIA GeForce RTX 3090 Ti', 'gpu_count': 1, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 3090 Ti', 'memory_total': 25757220864}], 'memory': {'total': 125.53047180175781}}
+2024-03-25 20:11:00,854 INFO    HandlerThread:322766 [system_monitor.py:probe():178] Finished collecting system info
+2024-03-25 20:11:00,854 INFO    HandlerThread:322766 [system_monitor.py:probe():181] Publishing system info
+2024-03-25 20:11:00,854 DEBUG   HandlerThread:322766 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2024-03-25 20:11:00,856 DEBUG   HandlerThread:322766 [system_info.py:_save_pip():67] Saving pip packages done
+2024-03-25 20:11:00,856 DEBUG   HandlerThread:322766 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2024-03-25 20:11:00,865 ERROR   HandlerThread:322766 [system_info.py:_save_conda():85] Error saving conda packages: [Errno 2] No such file or directory: 'conda'
+Traceback (most recent call last):
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/wandb/sdk/internal/system/system_info.py", line 81, in _save_conda
+    subprocess.call(
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/subprocess.py", line 349, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/subprocess.py", line 951, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/subprocess.py", line 1837, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'conda'
+2024-03-25 20:11:00,867 DEBUG   HandlerThread:322766 [system_info.py:_save_conda():86] Saving conda packages done
+2024-03-25 20:11:00,870 INFO    HandlerThread:322766 [system_monitor.py:probe():183] Finished publishing system info
+2024-03-25 20:11:00,875 DEBUG   SenderThread:322766 [sender.py:send():303] send: files
+2024-03-25 20:11:00,875 INFO    SenderThread:322766 [sender.py:_save_file():1171] saving file wandb-metadata.json with policy now
+2024-03-25 20:11:00,886 DEBUG   HandlerThread:322766 [handler.py:handle_request():139] handle_request: stop_status
+2024-03-25 20:11:00,887 DEBUG   SenderThread:322766 [sender.py:send_request():317] send_request: stop_status
+2024-03-25 20:11:01,127 DEBUG   SenderThread:322766 [sender.py:send():303] send: telemetry
+2024-03-25 20:11:01,128 DEBUG   SenderThread:322766 [sender.py:send():303] send: config
+2024-03-25 20:11:01,423 INFO    Thread-16 :322766 [upload_job.py:push():143] Uploaded file /tmp/tmpkmgm75epwandb/kb8riz8c-wandb-metadata.json
+2024-03-25 20:11:01,691 INFO    Thread-13 :322766 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files/requirements.txt
+2024-03-25 20:11:01,691 INFO    Thread-13 :322766 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files/conda-environment.yaml
+2024-03-25 20:11:01,692 INFO    Thread-13 :322766 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files/output.log
+2024-03-25 20:11:01,692 INFO    Thread-13 :322766 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files/wandb-metadata.json
+2024-03-25 20:11:01,692 INFO    Thread-13 :322766 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files/wandb-summary.json
+2024-03-25 20:11:03,692 INFO    Thread-13 :322766 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_201059-acdp0x55/files/output.log

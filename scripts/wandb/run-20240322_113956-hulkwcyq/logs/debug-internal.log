@@ -1,0 +1,7 @@
+2024-03-22 11:39:56,788 INFO    StreamThr :886123 [internal.py:wandb_internal():88] W&B internal server running at pid: 886123, started at: 2024-03-22 11:39:56.786505
+2024-03-22 11:39:56,789 DEBUG   HandlerThread:886123 [handler.py:handle_request():139] handle_request: status
+2024-03-22 11:39:56,790 DEBUG   SenderThread:886123 [sender.py:send_request():317] send_request: status
+2024-03-22 11:39:56,791 DEBUG   SenderThread:886123 [sender.py:send():303] send: header
+2024-03-22 11:39:56,791 INFO    WriterThread:886123 [datastore.py:open_for_write():75] open: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240322_113956-hulkwcyq/run-hulkwcyq.wandb
+2024-03-22 11:39:56,832 DEBUG   SenderThread:886123 [sender.py:send():303] send: run
+2024-03-22 11:39:56,836 INFO    SenderThread:886123 [sender.py:_maybe_setup_resume():593] checking resume status for None/U-Net/hulkwcyq

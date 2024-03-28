@@ -105,6 +105,7 @@ class Fixation(nn.Module):
     
 
 def get_mask_from_top_attn(attn: Tensor, cutoff_length: int) -> Tensor:
+    # print(f"cutoff_length {cutoff_length}")
     B, NH, _, _ = attn.shape
         
     attentions = attn[:, :, 0, 1:].reshape(B, NH, -1)
@@ -118,7 +119,7 @@ def get_mask_from_top_attn(attn: Tensor, cutoff_length: int) -> Tensor:
     """New version"""
     cutoff_values = values[:, :cutoff_length]
     cutoff_values = cutoff_values[:, -1:]  # select a threshold for each image in a batch
-    attn_mask = torch.where(attentions > cutoff_values, 1., 0.)
+    attn_mask = torch.where(attentions >= cutoff_values, 1., 0.)
     # attn_mask = attn_mask.unsqueeze(1).reshape(B, 1, attn_length, attn_length)
     # print(f"attn_mask shape {attn_mask.shape}")
     del attentions, values, idx, cutoff_values

@@ -71,7 +71,8 @@ class Attention(nn.Module):
         x = self.proj_drop(x)
 
         if return_attention:
-            return attn, x
+            # return attn, x
+            return attn
         return x
 
 

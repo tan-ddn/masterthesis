@@ -94,8 +94,12 @@ class Block(nn.Module):
     def forward(self, x: Tensor, return_attention: bool=False) -> Tensor:
         
         if return_attention:
-            attn = self.attn(self.norm1(x), return_attention=return_attention)
-            return attn
+            # print(self.training, self.sample_drop_ratio)
+            # attn, x = self.attn(self.norm1(x), return_attention=return_attention)
+            # x = x + self.ls1(x)
+            # x = x + self.ls2(self.mlp(self.norm2(x)))
+            # return attn, x
+            return self.attn(self.norm1(x), return_attention=return_attention)
         
         def attn_residual_func(x: Tensor) -> Tensor:
             return self.ls1(self.attn(self.norm1(x)))

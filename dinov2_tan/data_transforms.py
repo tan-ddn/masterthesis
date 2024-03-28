@@ -64,7 +64,26 @@ def make_classification_train_transform(
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
     grayscale: bool = False,
     norm = 'norm',
+    pulse2percept = False,
 ):
+    if pulse2percept:
+        transforms_list = []
+        if hflip_prob > 0.0:
+            transforms_list.append(v2.RandomHorizontalFlip(hflip_prob))
+        if norm == 'norm':
+            transforms_list.extend(
+                [
+                    MaybeToTensor(),
+                    make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
+                ]
+            )
+        else:
+            transforms_list.extend(
+                [
+                    MaybeToTensor(),
+                ]
+            )
+        return v2.Compose(transforms_list)
     transforms_list = [v2.RandomResizedCrop(crop_size, interpolation=interpolation)]
     if hflip_prob > 0.0:
         transforms_list.append(v2.RandomHorizontalFlip(hflip_prob))
@@ -97,7 +116,19 @@ def make_classification_eval_transform(
     std: Sequence[float] = IMAGENET_DEFAULT_STD,
     grayscale: bool = False,
     norm = 'norm',
+    pulse2percept = False,
 ) -> v2.Compose:
+    if pulse2percept:
+        if norm == 'norm':
+            transforms_list = [
+                MaybeToTensor(),
+                make_normalize_transform(mean=mean, std=std, grayscale=grayscale),
+            ]
+        else:
+            transforms_list = [
+                MaybeToTensor(),
+            ]
+        return v2.Compose(transforms_list)
     if norm == 'norm':
         transforms_list = [
             v2.Resize(resize_size, interpolation=interpolation),

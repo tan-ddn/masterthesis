@@ -1,0 +1,13 @@
+2024-03-22 11:42:55,714 INFO    StreamThr :887362 [internal.py:wandb_internal():88] W&B internal server running at pid: 887362, started at: 2024-03-22 11:42:55.713827
+2024-03-22 11:42:55,716 DEBUG   HandlerThread:887362 [handler.py:handle_request():139] handle_request: status
+2024-03-22 11:42:55,717 DEBUG   SenderThread:887362 [sender.py:send_request():317] send_request: status
+2024-03-22 11:42:55,718 DEBUG   SenderThread:887362 [sender.py:send():303] send: header
+2024-03-22 11:42:55,718 INFO    WriterThread:887362 [datastore.py:open_for_write():75] open: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240322_114255-acoekg3q/run-acoekg3q.wandb
+2024-03-22 11:42:55,761 DEBUG   SenderThread:887362 [sender.py:send():303] send: run
+2024-03-22 11:42:55,764 INFO    SenderThread:887362 [sender.py:_maybe_setup_resume():593] checking resume status for None/U-Net/acoekg3q
+2024-03-22 11:42:56,545 DEBUG   HandlerThread:887362 [handler.py:handle_request():139] handle_request: check_version
+2024-03-22 11:42:56,546 INFO    SenderThread:887362 [dir_watcher.py:__init__():216] watching files in: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240322_114255-acoekg3q/files
+2024-03-22 11:42:56,546 INFO    SenderThread:887362 [sender.py:_start_run_threads():928] run started: acoekg3q with start time 1711104175.711968
+2024-03-22 11:42:56,546 DEBUG   SenderThread:887362 [sender.py:send():303] send: summary
+2024-03-22 11:42:56,548 INFO    SenderThread:887362 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2024-03-22 11:42:56,549 DEBUG   SenderThread:887362 [sender.py:send_request():317] send_request: check_version

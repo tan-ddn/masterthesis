@@ -41,7 +41,7 @@ import gc
 sys.path.append("/home/students/tnguyen/masterthesis")
 
 import dino.utils
-import vision_transformer as vits
+import dinov2_tan.vision_transformer as vits
 from dinov2_tan.fixation_layer import Fixation
 from dinov2_lib.dinov2.eval.setup import get_autocast_dtype
 import dinov2_lib.dinov2.utils.utils as dinov2_utils
@@ -55,7 +55,7 @@ from dinov2_lib.dinov2.eval.setup import get_args_parser as get_setup_args_parse
 from dinov2_lib.dinov2.eval.metrics import MetricType, build_metric
 from dinov2_lib.dinov2.logging import MetricLogger
 from dinov2_tan.data_transforms import make_classification_eval_transform, make_classification_train_transform
-from dinov2_tan.pulse2percept_layer import image2percept
+from dinov2_tan.pulse2percept_layer import build_p2p_model_and_implant, image2percept
 
 
 logger = logging.getLogger("dinov2")
@@ -115,7 +115,7 @@ def get_args_parser(
     )
     parser.add_argument(
         "--save-checkpoint-frequency",
-        type=int,
+        type=float,
         help="Number of epochs between two named checkpoint saves.",
     )
     parser.add_argument(
@@ -173,8 +173,9 @@ def get_args_parser(
     parser.add_argument("--n_last_blocks", default=4, type=int, help="Maximun number of last blocks used for linear probing.")
     parser.add_argument("--run_on_cluster", action="store_true", help="Run on cluster or local machine. Default: local machine.")
     parser.add_argument("--pulse2percept", action="store_true", help="Pulse2percept between dataset and dinov2.")
+    parser.add_argument("--p2p_no_tar", action="store_true", help="Use pulse2percept tar files or not.")
     parser.add_argument("--norm", default="norm", type=str,
-        help='Normalization method for images: "norm", "no_norm", "norm_after_p2p. Default: "norm"')
+        help='Normalization method for images: "norm", "no_norm", "norm_after_p2p". "norm_after_p2p" is only used when pulse2percept and p2p_no_tar are both True. Default: "norm"')
     parser.set_defaults(
         train_dataset_str="ImageNetWds",
         val_dataset_str="ImageNetWds",
@@ -183,7 +184,7 @@ def get_args_parser(
         batch_size=512,
         num_workers=1,
         epoch_length=2501,
-        save_checkpoint_frequency=2,
+        save_checkpoint_frequency=1,
         eval_period_iterations=2501,
         learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 0.1],
         val_metric_type=MetricType.MEAN_ACCURACY,
@@ -200,6 +201,7 @@ def get_args_parser(
         n_last_blocks=4,
         run_on_cluster=False,
         pulse2percept=False,
+        p2p_no_tar=False,
         norm='norm',
     )
     return parser
@@ -239,12 +241,21 @@ class ModelWithMaskedLastFeature(nn.Module):
         self.n_last_blocks = n_last_blocks
         self.autocast_ctx = autocast_ctx
         self.args = args
+        self.p2p_patch_size = args.patch_size
+        self.p2p_model, self.square16_implant = build_p2p_model_and_implant(size=self.p2p_patch_size)
 
     def forward(self, images):
         with torch.inference_mode():
             with self.autocast_ctx():
-                if self.args.pulse2percept:
-                    images = image2percept(images, self.args)
+                # print(f'top_attention {self.feature_model.top_attention}')
+                if self.args.p2p_no_tar:
+                    images = images.permute(0, 2, 3, 1)  # move the channel to the last dim
+                    images = images.cpu().detach().numpy()
+                    images = image2percept(images, self.args, self.p2p_patch_size, self.p2p_model, self.square16_implant)
+                    images = torch.from_numpy(images).to(args.device).to(torch.float16).permute(0, 3, 1, 2)  # move the channel to the 2nd dim
+                    if self.args.norm == 'norm_after_p2p':
+                        transform = pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+                        images = transform(images)
                 features = self.feature_model.get_intermediate_layers_with_masked_feature(
                     images, self.n_last_blocks,
                 )
@@ -413,7 +424,7 @@ def test_on_datasets(
     results_dict = {}
     for test_dataset_str, class_mapping, metric_type in zip(test_dataset_strs, test_class_mappings, test_metric_types):
         logger.info(f"Testing on {test_dataset_str}")
-        test_data_loader = make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type)
+        test_data_loader = make_eval_data_loader(test_dataset_str, args, num_workers, metric_type)
         dataset_results_dict = evaluate_linear_classifiers(
             # fixation_model,
             feature_model,
@@ -447,16 +458,18 @@ class ImageNetWds(wds.WebDataset):
         return self
         
 
-def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type):
+def make_eval_data_loader(test_dataset_str, args, num_workers, metric_type):
     resize_size = int(args.image_size * 1.15)
+    p2p_tar_transform = True if args.pulse2percept and (not args.p2p_no_tar) else False
     if test_dataset_str == 'ImageNetWds':
-        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
+        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm, pulse2percept=p2p_tar_transform)
         test_data_dir = r'/images/innoretvision/eye/imagenet_patch/val/'
         test_data_num = r'002'
         if args.run_on_cluster:
             test_data_num = r'006'
-        if args.pulse2percept:
+        if p2p_tar_transform:
             test_data_dir = r'/images/innoretvision/eye/imagenet_patch/p2p/val_shards/'
+            test_data_num = r'001'
             if args.run_on_cluster:
                 test_data_num = r'002'
         test_data_path = test_data_dir + 'imagenet-val-{000000..000' + test_data_num + '}.tar'
@@ -480,7 +493,7 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
         
         test_data_loader = make_data_loader(
             dataset=test_dataset,
-            batch_size=batch_size,
+            batch_size=args.batch_size,
             num_workers=num_workers,
             sampler_type=None,
             drop_last=False,
@@ -491,11 +504,11 @@ def make_eval_data_loader(test_dataset_str, batch_size, num_workers, metric_type
     else:
         test_dataset = make_dataset(
             dataset_str=test_dataset_str,
-            transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
+            transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm, pulse2percept=p2p_tar_transform),
         )
         test_data_loader = make_data_loader(
             dataset=test_dataset,
-            batch_size=batch_size,
+            batch_size=args.batch_size,
             num_workers=num_workers,
             sampler_type=SamplerType.DISTRIBUTED,
             drop_last=False,
@@ -648,16 +661,18 @@ def run_eval_linear(
         assert len(test_metric_types) == len(test_dataset_strs)
     assert len(test_dataset_strs) == len(test_class_mapping_fpaths)
 
-    train_transform = make_classification_train_transform(crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
+    p2p_tar_transform = True if args.pulse2percept and (not args.p2p_no_tar) else False
+    train_transform = make_classification_train_transform(crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm, pulse2percept=p2p_tar_transform)
     if train_dataset_str == 'ImageNetWds':
         train_data_dir = r'/images/innoretvision/eye/imagenet_patch/train/'
         train_data_num = r'020'
         if args.run_on_cluster:
             train_data_num = r'146'
-        if args.pulse2percept:
+        if p2p_tar_transform:
             train_data_dir = r'/images/innoretvision/eye/imagenet_patch/p2p/train_shards/'
+            train_data_num = r'008'
             if args.run_on_cluster:
-                train_data_num = r'102'
+                train_data_num = r'027'
         train_data_path = train_data_dir + 'imagenet-train-{000000..000' + train_data_num + '}.tar'
         pil_dataset = (
             ImageNetWds(
@@ -698,8 +713,11 @@ def run_eval_linear(
     autocast_ctx = partial(torch.cuda.amp.autocast, enabled=True, dtype=autocast_dtype)
     fixations = None
     # fixation_model = ModelLastSelfAttentionFixation(model, args, 2, autocast_ctx).to(args.device)
-    # feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
-    feature_model = ModelWithMaskedLastFeature(model, args.fixation_top, n_last_blocks, autocast_ctx, args)
+    if args.fixation_top >= 1:
+        feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
+        compared_model = ModelWithMaskedLastFeature(model, args.fixation_top, n_last_blocks, autocast_ctx, args)
+    else:
+        feature_model = ModelWithMaskedLastFeature(model, args.fixation_top, n_last_blocks, autocast_ctx, args)
     if train_dataset_str == 'ImageNetWds':
         for image, label in train_dataset:
             break
@@ -707,6 +725,15 @@ def run_eval_linear(
         # _, fixations = fixation_model(image.unsqueeze(0).cuda())
         # sample_output = feature_model(fixations)
         sample_output = feature_model(image.unsqueeze(0).cuda())
+        # if args.fixation_top >= 1:
+        #     compared_sample_output = compared_model(image.unsqueeze(0).cuda())
+        #     mat_A = sample_output[0][0]#, sample_output[0][1]
+        #     mat_B = compared_sample_output[0][0]#, compared_sample_output[0][1]
+        #     print(mat_A, mat_B)
+        #     print(mat_A.shape, mat_B.shape)
+        #     print(f"compare 2 models' outputs: {torch.allclose(mat_A, mat_B)}")
+        #     print(f"similar percentage: {torch.sum(torch.eq(mat_A, mat_B)).item()/mat_A.nelement()}")
+        #     exit()
     else:
         # sample_output, fixations = feature_model(train_dataset[0][0].unsqueeze(0).cuda())
         # _, fixations = fixation_model(train_dataset[0][0].unsqueeze(0).cuda())
@@ -739,9 +766,9 @@ def run_eval_linear(
         drop_last=True,
         persistent_workers=True,
     )
-    val_data_loader = make_eval_data_loader(val_dataset_str, batch_size, num_workers, val_metric_type)
+    val_data_loader = make_eval_data_loader(val_dataset_str, args, num_workers, val_metric_type)
 
-    checkpoint_period = save_checkpoint_frequency * epoch_length
+    checkpoint_period = int(save_checkpoint_frequency * epoch_length)
 
     if val_class_mapping_fpath is not None:
         logger.info(f"Using class mapping from {val_class_mapping_fpath}")

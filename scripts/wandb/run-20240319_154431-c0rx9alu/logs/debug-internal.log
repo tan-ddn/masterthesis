@@ -1,0 +1,183 @@
+2024-03-19 15:44:31,318 INFO    StreamThr :337166 [internal.py:wandb_internal():88] W&B internal server running at pid: 337166, started at: 2024-03-19 15:44:31.316815
+2024-03-19 15:44:31,320 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: status
+2024-03-19 15:44:31,322 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: status
+2024-03-19 15:44:31,324 DEBUG   SenderThread:337166 [sender.py:send():303] send: header
+2024-03-19 15:44:31,324 INFO    WriterThread:337166 [datastore.py:open_for_write():75] open: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/run-c0rx9alu.wandb
+2024-03-19 15:44:31,400 DEBUG   SenderThread:337166 [sender.py:send():303] send: run
+2024-03-19 15:44:31,406 INFO    SenderThread:337166 [sender.py:_maybe_setup_resume():593] checking resume status for None/U-Net/c0rx9alu
+2024-03-19 15:44:32,154 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: check_version
+2024-03-19 15:44:32,157 INFO    SenderThread:337166 [dir_watcher.py:__init__():216] watching files in: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files
+2024-03-19 15:44:32,157 INFO    SenderThread:337166 [sender.py:_start_run_threads():928] run started: c0rx9alu with start time 1710859471.315028
+2024-03-19 15:44:32,157 DEBUG   SenderThread:337166 [sender.py:send():303] send: summary
+2024-03-19 15:44:32,159 INFO    SenderThread:337166 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2024-03-19 15:44:32,159 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: check_version
+2024-03-19 15:44:32,316 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: run_start
+2024-03-19 15:44:32,362 DEBUG   HandlerThread:337166 [system_info.py:__init__():31] System info init
+2024-03-19 15:44:32,362 DEBUG   HandlerThread:337166 [system_info.py:__init__():46] System info init done
+2024-03-19 15:44:32,363 INFO    HandlerThread:337166 [system_monitor.py:start():150] Starting system monitor
+2024-03-19 15:44:32,363 INFO    SystemMonitor:337166 [system_monitor.py:_start():116] Starting system asset monitoring threads
+2024-03-19 15:44:32,365 INFO    HandlerThread:337166 [system_monitor.py:probe():168] Collecting system info
+2024-03-19 15:44:32,365 INFO    SystemMonitor:337166 [interfaces.py:start():168] Started cpu
+2024-03-19 15:44:32,366 INFO    SystemMonitor:337166 [interfaces.py:start():168] Started disk
+2024-03-19 15:44:32,367 INFO    SystemMonitor:337166 [interfaces.py:start():168] Started gpu
+2024-03-19 15:44:32,368 INFO    SystemMonitor:337166 [interfaces.py:start():168] Started memory
+2024-03-19 15:44:32,369 INFO    SystemMonitor:337166 [interfaces.py:start():168] Started network
+2024-03-19 15:44:32,419 DEBUG   HandlerThread:337166 [system_info.py:probe():195] Probing system
+2024-03-19 15:44:32,430 DEBUG   HandlerThread:337166 [system_info.py:_probe_git():180] Probing git
+2024-03-19 15:44:32,463 DEBUG   HandlerThread:337166 [system_info.py:_probe_git():188] Probing git done
+2024-03-19 15:44:32,463 DEBUG   HandlerThread:337166 [system_info.py:probe():241] Probing system done
+2024-03-19 15:44:32,463 DEBUG   HandlerThread:337166 [system_monitor.py:probe():177] {'os': 'Linux-6.5.0-17-generic-x86_64-with-glibc2.35', 'python': '3.9.18', 'heartbeatAt': '2024-03-19T14:44:32.419246', 'startedAt': '2024-03-19T14:44:31.287999', 'docker': None, 'cuda': None, 'args': ('--run_on_cluster', '--output-dir', '/work/scratch/tnguyen/unet/surrogate/3', '--batch-size', '512', '--epochs', '50', '--learning-rate', '1e-5', '--weight-decay', '0'), 'state': 'running', 'program': '/home/students/tnguyen/masterthesis/unet/train_surrogate.py', 'codePath': 'unet/train_surrogate.py', 'git': {'remote': 'git@git.lfb.rwth-aachen.de:tnguyen/masterthesis.git', 'commit': '0b684bec024866f24d03cf0dbad04d6184eec94e'}, 'email': None, 'root': '/home/students/tnguyen/masterthesis', 'host': 'curie', 'username': 'tnguyen', 'executable': '/work/scratch/tnguyen/miniconda3/envs/dinov2/bin/python', 'cpu_count': 32, 'cpu_count_logical': 64, 'cpu_freq': {'current': 1908.008578125, 'min': 1000.0, 'max': 3900.0}, 'cpu_freq_per_core': [{'current': 3328.508, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.033, 'min': 1000.0, 'max': 3900.0}, {'current': 1454.701, 'min': 1000.0, 'max': 3900.0}, {'current': 2542.087, 'min': 1000.0, 'max': 3900.0}, {'current': 2300.231, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 3581.482, 'min': 1000.0, 'max': 3900.0}, {'current': 2600.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1127.724, 'min': 1000.0, 'max': 3900.0}, {'current': 1309.114, 'min': 1000.0, 'max': 3900.0}, {'current': 2126.249, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2500.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 3900.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1044.349, 'min': 1000.0, 'max': 3900.0}, {'current': 2540.24, 'min': 1000.0, 'max': 3900.0}, {'current': 1751.419, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1081.297, 'min': 1000.0, 'max': 3900.0}, {'current': 3800.0, 'min': 1000.0, 'max': 3900.0}, {'current': 3900.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1133.312, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2600.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.3, 'min': 1000.0, 'max': 3900.0}, {'current': 3900.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 3900.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1625.507, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2457.848, 'min': 1000.0, 'max': 3900.0}, {'current': 1099.999, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2254.7, 'min': 1000.0, 'max': 3900.0}, {'current': 2500.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1400.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1500.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2300.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2166.539, 'min': 1000.0, 'max': 3900.0}, {'current': 2199.999, 'min': 1000.0, 'max': 3900.0}, {'current': 1796.567, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1100.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1249.256, 'min': 1000.0, 'max': 3900.0}, {'current': 2565.169, 'min': 1000.0, 'max': 3900.0}, {'current': 1215.024, 'min': 1000.0, 'max': 3900.0}, {'current': 1097.698, 'min': 1000.0, 'max': 3900.0}, {'current': 2500.0, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}, {'current': 2309.766, 'min': 1000.0, 'max': 3900.0}, {'current': 1000.0, 'min': 1000.0, 'max': 3900.0}], 'disk': {'total': 983.2306137084961, 'used': 785.4120216369629}, 'gpu': 'NVIDIA TITAN RTX', 'gpu_count': 5, 'gpu_devices': [{'name': 'NVIDIA TITAN RTX', 'memory_total': 25769803776}, {'name': 'NVIDIA TITAN RTX', 'memory_total': 25769803776}, {'name': 'NVIDIA TITAN RTX', 'memory_total': 25769803776}, {'name': 'NVIDIA TITAN RTX', 'memory_total': 25769803776}, {'name': 'NVIDIA TITAN RTX', 'memory_total': 25769803776}], 'memory': {'total': 754.5467681884766}}
+2024-03-19 15:44:32,463 INFO    HandlerThread:337166 [system_monitor.py:probe():178] Finished collecting system info
+2024-03-19 15:44:32,463 INFO    HandlerThread:337166 [system_monitor.py:probe():181] Publishing system info
+2024-03-19 15:44:32,463 DEBUG   HandlerThread:337166 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2024-03-19 15:44:32,467 DEBUG   HandlerThread:337166 [system_info.py:_save_pip():67] Saving pip packages done
+2024-03-19 15:44:32,467 DEBUG   HandlerThread:337166 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2024-03-19 15:44:32,473 ERROR   HandlerThread:337166 [system_info.py:_save_conda():85] Error saving conda packages: [Errno 2] No such file or directory: 'conda'
+Traceback (most recent call last):
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/wandb/sdk/internal/system/system_info.py", line 81, in _save_conda
+    subprocess.call(
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/subprocess.py", line 349, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/subprocess.py", line 951, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/subprocess.py", line 1837, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'conda'
+2024-03-19 15:44:32,473 DEBUG   HandlerThread:337166 [system_info.py:_save_conda():86] Saving conda packages done
+2024-03-19 15:44:32,476 INFO    HandlerThread:337166 [system_monitor.py:probe():183] Finished publishing system info
+2024-03-19 15:44:32,478 DEBUG   SenderThread:337166 [sender.py:send():303] send: files
+2024-03-19 15:44:32,478 INFO    SenderThread:337166 [sender.py:_save_file():1171] saving file wandb-metadata.json with policy now
+2024-03-19 15:44:32,485 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: stop_status
+2024-03-19 15:44:32,485 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: stop_status
+2024-03-19 15:44:32,826 DEBUG   SenderThread:337166 [sender.py:send():303] send: telemetry
+2024-03-19 15:44:32,827 DEBUG   SenderThread:337166 [sender.py:send():303] send: config
+2024-03-19 15:44:33,079 INFO    Thread-16 :337166 [upload_job.py:push():143] Uploaded file /tmp/tmp99bmn6y1wandb/ivpgqkj6-wandb-metadata.json
+2024-03-19 15:44:33,160 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/requirements.txt
+2024-03-19 15:44:33,161 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/wandb-metadata.json
+2024-03-19 15:44:33,161 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/output.log
+2024-03-19 15:44:33,161 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/wandb-summary.json
+2024-03-19 15:44:33,161 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_created():275] file/dir created: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/conda-environment.yaml
+2024-03-19 15:44:35,161 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/output.log
+2024-03-19 15:44:47,831 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: stop_status
+2024-03-19 15:44:47,831 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: stop_status
+2024-03-19 15:45:03,139 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: stop_status
+2024-03-19 15:45:03,140 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: stop_status
+2024-03-19 15:45:03,188 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/config.yaml
+2024-03-19 15:45:08,536 DEBUG   SenderThread:337166 [sender.py:send():303] send: exit
+2024-03-19 15:45:08,537 INFO    SenderThread:337166 [sender.py:send_exit():442] handling exit code: 1
+2024-03-19 15:45:08,538 INFO    SenderThread:337166 [sender.py:send_exit():444] handling runtime: 36
+2024-03-19 15:45:08,541 INFO    SenderThread:337166 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2024-03-19 15:45:08,541 INFO    SenderThread:337166 [sender.py:send_exit():450] send defer
+2024-03-19 15:45:08,542 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:08,542 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 0
+2024-03-19 15:45:08,542 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:08,542 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 0
+2024-03-19 15:45:08,542 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 1
+2024-03-19 15:45:08,543 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:08,543 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 1
+2024-03-19 15:45:08,543 INFO    HandlerThread:337166 [system_monitor.py:finish():160] Stopping system monitor
+2024-03-19 15:45:08,543 DEBUG   SystemMonitor:337166 [system_monitor.py:_start():130] Starting system metrics aggregation loop
+2024-03-19 15:45:08,544 DEBUG   SystemMonitor:337166 [system_monitor.py:_start():137] Finished system metrics aggregation loop
+2024-03-19 15:45:08,544 DEBUG   SystemMonitor:337166 [system_monitor.py:_start():141] Publishing last batch of metrics
+2024-03-19 15:45:08,546 INFO    HandlerThread:337166 [interfaces.py:finish():173] Joined cpu
+2024-03-19 15:45:08,546 INFO    HandlerThread:337166 [interfaces.py:finish():173] Joined disk
+2024-03-19 15:45:08,998 INFO    HandlerThread:337166 [interfaces.py:finish():173] Joined gpu
+2024-03-19 15:45:09,000 INFO    HandlerThread:337166 [interfaces.py:finish():173] Joined memory
+2024-03-19 15:45:09,000 INFO    HandlerThread:337166 [interfaces.py:finish():173] Joined network
+2024-03-19 15:45:09,003 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:09,003 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 1
+2024-03-19 15:45:09,003 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 2
+2024-03-19 15:45:09,004 DEBUG   SenderThread:337166 [sender.py:send():303] send: stats
+2024-03-19 15:45:09,026 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:09,026 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 2
+2024-03-19 15:45:09,032 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:09,040 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 2
+2024-03-19 15:45:09,044 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 3
+2024-03-19 15:45:09,045 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:09,045 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 3
+2024-03-19 15:45:09,045 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:09,045 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 3
+2024-03-19 15:45:09,045 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 4
+2024-03-19 15:45:09,046 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:09,046 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 4
+2024-03-19 15:45:09,046 DEBUG   SenderThread:337166 [sender.py:send():303] send: summary
+2024-03-19 15:45:09,049 INFO    SenderThread:337166 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2024-03-19 15:45:09,050 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:09,050 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 4
+2024-03-19 15:45:09,050 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 5
+2024-03-19 15:45:09,051 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:09,051 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 5
+2024-03-19 15:45:09,051 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:09,051 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 5
+2024-03-19 15:45:09,051 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 6
+2024-03-19 15:45:09,052 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:09,052 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 6
+2024-03-19 15:45:09,052 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:09,052 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 6
+2024-03-19 15:45:09,195 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/output.log
+2024-03-19 15:45:09,196 INFO    Thread-13 :337166 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/wandb-summary.json
+2024-03-19 15:45:09,537 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: poll_exit
+2024-03-19 15:45:11,044 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 7
+2024-03-19 15:45:11,044 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: poll_exit
+2024-03-19 15:45:11,046 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:11,046 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 7
+2024-03-19 15:45:11,046 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:11,047 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 7
+2024-03-19 15:45:11,047 INFO    SenderThread:337166 [dir_watcher.py:finish():362] shutting down directory watcher
+2024-03-19 15:45:11,197 INFO    SenderThread:337166 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/output.log
+2024-03-19 15:45:11,198 INFO    SenderThread:337166 [dir_watcher.py:finish():392] scan: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files
+2024-03-19 15:45:11,199 INFO    SenderThread:337166 [dir_watcher.py:finish():406] scan save: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/output.log output.log
+2024-03-19 15:45:11,199 INFO    SenderThread:337166 [dir_watcher.py:finish():406] scan save: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/wandb-summary.json wandb-summary.json
+2024-03-19 15:45:11,200 INFO    SenderThread:337166 [dir_watcher.py:finish():406] scan save: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/wandb-metadata.json wandb-metadata.json
+2024-03-19 15:45:11,200 INFO    SenderThread:337166 [dir_watcher.py:finish():406] scan save: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/config.yaml config.yaml
+2024-03-19 15:45:11,201 INFO    SenderThread:337166 [dir_watcher.py:finish():406] scan save: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/conda-environment.yaml conda-environment.yaml
+2024-03-19 15:45:11,207 INFO    SenderThread:337166 [dir_watcher.py:finish():406] scan save: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/requirements.txt requirements.txt
+2024-03-19 15:45:11,214 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 8
+2024-03-19 15:45:11,214 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:11,214 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 8
+2024-03-19 15:45:11,215 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:11,215 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 8
+2024-03-19 15:45:11,215 INFO    SenderThread:337166 [file_pusher.py:finish():168] shutting down file pusher
+2024-03-19 15:45:11,847 INFO    Thread-20 :337166 [upload_job.py:push():143] Uploaded file /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/requirements.txt
+2024-03-19 15:45:11,887 INFO    Thread-17 :337166 [upload_job.py:push():143] Uploaded file /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/output.log
+2024-03-19 15:45:11,891 INFO    Thread-18 :337166 [upload_job.py:push():143] Uploaded file /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/wandb-summary.json
+2024-03-19 15:45:11,940 INFO    Thread-19 :337166 [upload_job.py:push():143] Uploaded file /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/files/config.yaml
+2024-03-19 15:45:12,141 INFO    Thread-12 :337166 [sender.py:transition_state():463] send defer: 9
+2024-03-19 15:45:12,142 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:12,142 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 9
+2024-03-19 15:45:12,142 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:12,143 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 9
+2024-03-19 15:45:12,143 INFO    SenderThread:337166 [file_pusher.py:join():173] waiting for file pusher
+2024-03-19 15:45:12,143 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 10
+2024-03-19 15:45:12,143 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:12,144 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 10
+2024-03-19 15:45:12,144 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:12,144 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 10
+2024-03-19 15:45:12,278 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 11
+2024-03-19 15:45:12,279 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:12,279 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 11
+2024-03-19 15:45:12,280 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:12,280 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 11
+2024-03-19 15:45:12,280 INFO    SenderThread:337166 [sender.py:transition_state():463] send defer: 12
+2024-03-19 15:45:12,281 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: defer
+2024-03-19 15:45:12,281 INFO    HandlerThread:337166 [handler.py:handle_request_defer():162] handle defer: 12
+2024-03-19 15:45:12,281 DEBUG   SenderThread:337166 [sender.py:send():303] send: final
+2024-03-19 15:45:12,281 DEBUG   SenderThread:337166 [sender.py:send():303] send: footer
+2024-03-19 15:45:12,281 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: defer
+2024-03-19 15:45:12,281 INFO    SenderThread:337166 [sender.py:send_request_defer():459] handle sender defer: 12
+2024-03-19 15:45:12,283 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: poll_exit
+2024-03-19 15:45:12,284 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: poll_exit
+2024-03-19 15:45:12,285 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: server_info
+2024-03-19 15:45:12,286 DEBUG   SenderThread:337166 [sender.py:send_request():317] send_request: server_info
+2024-03-19 15:45:12,290 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: get_summary
+2024-03-19 15:45:12,292 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: sampled_history
+2024-03-19 15:45:12,717 INFO    MainThread:337166 [wandb_run.py:_footer_history_summary_info():3377] rendering history
+2024-03-19 15:45:12,717 INFO    MainThread:337166 [wandb_run.py:_footer_history_summary_info():3409] rendering summary
+2024-03-19 15:45:12,717 INFO    MainThread:337166 [wandb_run.py:_footer_sync_info():3333] logging synced files
+2024-03-19 15:45:12,719 DEBUG   HandlerThread:337166 [handler.py:handle_request():139] handle_request: shutdown
+2024-03-19 15:45:12,719 INFO    HandlerThread:337166 [handler.py:finish():814] shutting down handler
+2024-03-19 15:45:13,281 INFO    WriterThread:337166 [datastore.py:close():279] close: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240319_154431-c0rx9alu/run-c0rx9alu.wandb
+2024-03-19 15:45:13,716 INFO    SenderThread:337166 [sender.py:finish():1331] shutting down sender
+2024-03-19 15:45:13,716 INFO    SenderThread:337166 [file_pusher.py:finish():168] shutting down file pusher
+2024-03-19 15:45:13,716 INFO    SenderThread:337166 [file_pusher.py:join():173] waiting for file pusher
+2024-03-19 15:45:13,726 INFO    MainThread:337166 [internal.py:handle_exit():78] Internal process exited
