@@ -169,6 +169,8 @@ def main():
     parser.add_argument("--image_size", default=224, type=int, help="Resize image.")
     parser.add_argument('--patch_size', default=14, type=int, help='Patch resolution of the model.')
     parser.add_argument('--batch_size', default=4096, type=int, help='Batch size.')
+    parser.add_argument('--rho', default=150, type=int, help='Rho parameter.')
+    parser.add_argument('--axlamda', default=100, type=int, help='Axlamda parameter.')
     parser.add_argument("--range", default=(0, 1), type=int, nargs="+", help="Range of images in dataset.")
     parser.add_argument('--output_dir', default='/images/innoretvision/eye/imagenet_patch/p2p/', help='Path where to save visualizations.')
     parser.add_argument("--time_track", default=False, type=bool, help="Track time during the pulse2percept.")
@@ -219,7 +221,7 @@ def main():
         
     """Prepare p2p_model and implant"""
     p2p_patch_size = args.patch_size
-    p2p_model, square16_implant = build_p2p_model_and_implant(size=p2p_patch_size)
+    p2p_model, square16_implant = build_p2p_model_and_implant(size=p2p_patch_size, axlamda=args.axlamda, rho=args.rho)
 
     for saved_filenames, imgs in batch_imgs_generator(files, args):
         percept = image2percept(imgs, args, p2p_patch_size, p2p_model, square16_implant)

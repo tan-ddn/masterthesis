@@ -100,11 +100,11 @@ def train_model(
     train_loader = DataLoader(train_set, shuffle=True, drop_last=False, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=False, **loader_args)
 
-    # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    experiment.config.update(
-        dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
-    )
+    # # (Initialize logging)
+    # experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
+    # experiment.config.update(
+    #     dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate, save_checkpoint=save_checkpoint, img_scale=img_scale, amp=amp)
+    # )
 
     logging.info(f'''Starting training:
         Epochs:          {epochs}
@@ -186,11 +186,11 @@ def train_model(
 
                 global_step += 1
                 epoch_loss += loss.item()
-                experiment.log({
-                    'train loss': loss.item() / (n_patches),
-                    'step': global_step,
-                    'epoch': epoch
-                })
+                # experiment.log({
+                #     'train loss': loss.item() / (n_patches),
+                #     'step': global_step,
+                #     'epoch': epoch
+                # })
                 if not args.run_on_cluster:
                     pbar.update(images.shape[0])
                     pbar.set_postfix(**{'loss (batch)': loss.item() / (n_patches)})
@@ -200,33 +200,33 @@ def train_model(
 
                 # Evaluation round
                 if (global_step > 5) and (global_step % (n_train // batch_size) == 0):
-                    histograms = {}
-                    for tag, value in model.named_parameters():
-                        tag = tag.replace('/', '.')
-                        if not (torch.isinf(value) | torch.isnan(value)).any():
-                            histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                        if not (torch.isinf(value.grad) | torch.isnan(value.grad)).any():
-                            histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+                    # histograms = {}
+                    # for tag, value in model.named_parameters():
+                    #     tag = tag.replace('/', '.')
+                    #     if not (torch.isinf(value) | torch.isnan(value)).any():
+                    #         histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                    #     if not (torch.isinf(value.grad) | torch.isnan(value.grad)).any():
+                    #         histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
                     val_score = evaluate(model, patch_size, n_patches, criterion, val_loader, device, amp)
                     scheduler.step(val_score)
 
                     logging.info('Validation Dice score: {}'.format(val_score))
-                    try:
-                        experiment.log({
-                            'learning rate': optimizer.param_groups[0]['lr'],
-                            'validation Dice': val_score,
-                            'images': wandb.Image(images[0].cpu()),
-                            'masks': {
-                                'true': wandb.Image(true_masks[0].float().cpu()),
-                                'pred': wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
-                            },
-                            'step': global_step,
-                            'epoch': epoch,
-                            **histograms
-                        })
-                    except:
-                        pass
+                    # try:
+                    #     experiment.log({
+                    #         'learning rate': optimizer.param_groups[0]['lr'],
+                    #         'validation Dice': val_score,
+                    #         'images': wandb.Image(images[0].cpu()),
+                    #         'masks': {
+                    #             'true': wandb.Image(true_masks[0].float().cpu()),
+                    #             'pred': wandb.Image(masks_pred.argmax(dim=1)[0].float().cpu()),
+                    #         },
+                    #         'step': global_step,
+                    #         'epoch': epoch,
+                    #         **histograms
+                    #     })
+                    # except:
+                    #     pass
 
         """General checkpoint"""
         train_loss = epoch_loss / (len(train_loader) * n_patches)

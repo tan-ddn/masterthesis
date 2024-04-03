@@ -92,7 +92,7 @@ request_cpus = 1
 request_gpus = 1
 
 # required CPU RAM
-request_memory = 40 GB
+request_memory = 50 GB
 
 # required Disk space
 
@@ -128,11 +128,18 @@ load_profile = True
 # if you want to use a range of arguments, 
 # you can add them like this, one set of argumetns per line
 queue 1 arguments from (
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/1/ --batch-size 256 --epochs 50 --learning-rate 1e-3 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/2/ --batch-size 256 --epochs 50 --learning-rate 1e-4 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/3/ --batch-size 256 --epochs 50 --learning-rate 1e-5 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/4/ --batch-size 256 --epochs 50 --learning-rate 1e-6 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/5/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/6/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/7/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/1/ --batch-size 256 --epochs 50 --learning-rate 1e-3 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/2/ --batch-size 256 --epochs 50 --learning-rate 1e-4 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/3/ --batch-size 256 --epochs 50 --learning-rate 1e-5 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/4/ --batch-size 256 --epochs 50 --learning-rate 1e-6 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/5/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/6/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/7/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/8/ --batch-size 256 --epochs 50 --learning-rate 1e-3 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/9/ --batch-size 256 --epochs 50 --learning-rate 1e-4 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/10/ --batch-size 256 --epochs 50 --learning-rate 1e-5 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/11/ --batch-size 256 --epochs 50 --learning-rate 1e-6 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/12/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/13/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/14/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0.01
 )
