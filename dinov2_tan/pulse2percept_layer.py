@@ -35,11 +35,15 @@ def build_p2p_model_and_implant(size, axlambda=100, rho=150, range_limit=13):
     
     return p2p_model, square16_implant
 
-def get_percept(image, p2p_model, implant):
+def get_percept(image, p2p_model, implant, normalize=False, filter_type=None):
+    if normalize:
+        image *= 255.0/image.max()
     image_stim = ImageStimulus(image).rgb2gray()
+    if filter_type is not None:
+        image_stim = image_stim.filter(filter_type)
     implant.stim = image_stim
     percept = p2p_model.predict_percept(implant)
-    return percept
+    return percept, image_stim
 
 def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
     crop_start = (p2p_patch_size // 2) - 1
@@ -59,18 +63,21 @@ def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
     #     crop = patch_percept.data[30:91, 30:91, :]
     #     percept.append(crop)
 
-    def percept_task(no_crop, start_index, patches, percept, thread_index):
+    def percept_task(args, start_index, patches, percept, thread_index):
         # print(f"Thread {thread_index} starts")
         for i, patch in enumerate(patches):
             percept_index = start_index + i
-            patch_percept = get_percept(patch, p2p_model, square16_implant)
+            patch_percept, image_stim = get_percept(patch, p2p_model, square16_implant, args.normalize_patch, args.filter_type)
             # print(f'patch_percept shape {patch_percept.data.shape}')  # (27, 27, 1)
-            if no_crop:
+            # print(f'patch_percept shape {image_stim.data.shape}')  # (196, 1)
+            if args.no_crop:
                 # print(f'patch_percept shape {patch_percept.data.shape}')
                 percept[percept_index] = patch_percept.data
             else:
                 crop_percept = patch_percept.data[crop_start:crop_end, crop_start:crop_end, :]
                 percept[percept_index] = crop_percept
+            if args.save_stim:
+                full_image_stim[percept_index] = image_stim.data.reshape((patch.shape[0], patch.shape[1], 1))
             # if (thread_index == 1) and ((percept_index % 10) == 0):
             #     print(f"percept_index {percept_index}")
 
@@ -79,11 +86,12 @@ def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
     print(f'num_thread {num_thread}')
     # percept = np.zeros((patches.shape[0], 56, 56, 1))
     percept = [None] * patches.shape[0]
+    full_image_stim = [None] * patches.shape[0]
     list_of_patches = np.array_split(patches, num_thread)
     threads = [None] * num_thread
     next_chunk_start_index = 0
     for i in range(num_thread):
-        threads[i] = threading.Thread(target=percept_task, args=(args.no_crop, next_chunk_start_index, list_of_patches[i], percept, i, ))
+        threads[i] = threading.Thread(target=percept_task, args=(args, next_chunk_start_index, list_of_patches[i], percept, i, ))
         threads[i].start()
         next_chunk_start_index += len(list_of_patches[i])
     for i in range(num_thread):
@@ -101,6 +109,10 @@ def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
         percept = pypatchify.unpatchify_from_batches(percept, (args.image_size, args.image_size, 1), batch_dim=0)
     # print(f'percept shape {percept.shape}')  # shape (N, C, args.image_size, args.image_size)
     del patches
+    if args.save_stim:
+        full_image_stim = np.array(full_image_stim)
+        full_image_stim = pypatchify.unpatchify_from_batches(full_image_stim, (args.image_size, args.image_size, 1), batch_dim=0)  # For debug only
+        return np.tile(percept, (1, 1, 1, 3)), np.tile(full_image_stim, (1, 1, 1, 3))
     # return percept.expand(-1, 3, -1, -1)
     return np.tile(percept, (1, 1, 1, 3))
 
@@ -150,7 +162,10 @@ def batch_imgs_generator(files, args):
         # save_image(img, saved_dir + "org_" + image_name)
         img = cv2.imread(image_file)
         img = cv2.resize(img, (args.image_size, args.image_size))
-        imgs[i, :, :, :] = np.array(img)
+        img = np.array(img, dtype=np.float64)
+        if args.normalize:
+            img *= 255.0/img.max()
+        imgs[i, :, :, :] = img
 
         # print(f'imgs[i] shape {imgs[i].shape}')
         # print(f'imgs[i] type {type(imgs[i])}')
@@ -166,9 +181,9 @@ def batch_imgs_generator(files, args):
         i += 1
         if i == args.batch_size:
             i = 0
-            yield img_paths, imgs
+            yield img_paths, imgs, [path.replace(".jpg", "_stim.jpg") for path in img_paths]
     if i > 0:
-        yield img_paths, imgs[:len(img_paths), :, :, :]
+        yield img_paths, imgs[:len(img_paths), :, :, :], [path.replace(".jpg", "_stim.jpg") for path in img_paths]
 
 def main():
     parser = argparse.ArgumentParser('Create percept from pulse2percept')
@@ -181,7 +196,11 @@ def main():
     parser.add_argument('--range_limit', default=13, type=int, help='xrange min max and yrange min max.')
     parser.add_argument("--range", default=(0, 1), type=int, nargs="+", help="Range of images in dataset.")
     parser.add_argument('--output_dir', default='/images/innoretvision/eye/imagenet_patch/p2p/', help='Path where to save visualizations.')
+    parser.add_argument("--filter_type", default=None, help="Filter type for stimulus (sobel, scharr, or median).")
     parser.add_argument("--no_crop", action='store_true', default=False, help="Crop pulse2percept output.")
+    parser.add_argument("--save_stim", action='store_true', default=False, help="Save stimulus before input to pulse2percept.")
+    parser.add_argument("--normalize", action='store_true', default=False, help="Normalize image.")
+    parser.add_argument("--normalize_patch", action='store_true', default=False, help="Normalize over single patch only.")
     parser.add_argument("--time_track", action='store_true', default=False, help="Track time during the pulse2percept.")
     args = parser.parse_args()
 
@@ -232,8 +251,12 @@ def main():
     p2p_patch_size = args.patch_size
     p2p_model, square16_implant = build_p2p_model_and_implant(size=p2p_patch_size, axlambda=args.axlambda, rho=args.rho, range_limit=args.range_limit)
 
-    for saved_filenames, imgs in batch_imgs_generator(files, args):
-        percept = image2percept(imgs, args, p2p_patch_size, p2p_model, square16_implant)
+    for saved_filenames, imgs, stim_names in batch_imgs_generator(files, args):
+        if args.save_stim:
+            percept, full_stim = image2percept(imgs, args, p2p_patch_size, p2p_model, square16_implant)
+            cv2.imwrite(stim_names[0], full_stim[0])
+        else:
+            percept = image2percept(imgs, args, p2p_patch_size, p2p_model, square16_implant)
         for i in range(len(percept)):
             if os.path.isfile(saved_filenames[i]):
                 continue

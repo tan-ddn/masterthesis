@@ -135,11 +135,16 @@ queue 1 arguments from (
 # --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/5/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0
 # --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/6/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0
 # --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/7/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/8/ --batch-size 256 --epochs 50 --learning-rate 1e-3 --weight-decay 0.01
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/9/ --batch-size 256 --epochs 50 --learning-rate 1e-4 --weight-decay 0.01
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/10/ --batch-size 256 --epochs 50 --learning-rate 1e-5 --weight-decay 0.01
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/11/ --batch-size 256 --epochs 50 --learning-rate 1e-6 --weight-decay 0.01
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/12/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0.01
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/13/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0.01
---run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/14/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/8/ --batch-size 256 --epochs 50 --learning-rate 1e-3 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/9/ --batch-size 256 --epochs 50 --learning-rate 1e-4 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/10/ --batch-size 256 --epochs 50 --learning-rate 1e-5 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/11/ --batch-size 256 --epochs 50 --learning-rate 1e-6 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/12/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/13/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0.01
+# --run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/14/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0.01
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/15/ --batch-size 256 --epochs 50 --learning-rate 1e-5 --weight-decay 0.1
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/16/ --batch-size 256 --epochs 50 --learning-rate 1e-6 --weight-decay 0.1
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/17/ --batch-size 256 --epochs 50 --learning-rate 1e-7 --weight-decay 0.1
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/18/ --batch-size 256 --epochs 50 --learning-rate 1e-8 --weight-decay 0.1
+--run_on_cluster --output-dir /work/scratch/tnguyen/unet/surrogate/19/ --batch-size 256 --epochs 50 --learning-rate 1e-9 --weight-decay 0.1
 )
