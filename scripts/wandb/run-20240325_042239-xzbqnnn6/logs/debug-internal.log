@@ -1,7 +1,0 @@
-2024-03-25 04:22:39,339 INFO    StreamThr :2844482 [internal.py:wandb_internal():88] W&B internal server running at pid: 2844482, started at: 2024-03-25 04:22:39.337418
-2024-03-25 04:22:39,343 DEBUG   HandlerThread:2844482 [handler.py:handle_request():139] handle_request: status
-2024-03-25 04:22:39,346 DEBUG   SenderThread:2844482 [sender.py:send_request():317] send_request: status
-2024-03-25 04:22:39,349 DEBUG   SenderThread:2844482 [sender.py:send():303] send: header
-2024-03-25 04:22:39,349 INFO    WriterThread:2844482 [datastore.py:open_for_write():75] open: /home/students/tnguyen/masterthesis/scripts/wandb/run-20240325_042239-xzbqnnn6/run-xzbqnnn6.wandb
-2024-03-25 04:22:39,431 DEBUG   SenderThread:2844482 [sender.py:send():303] send: run
-2024-03-25 04:22:39,437 INFO    SenderThread:2844482 [sender.py:_maybe_setup_resume():593] checking resume status for None/U-Net/xzbqnnn6
