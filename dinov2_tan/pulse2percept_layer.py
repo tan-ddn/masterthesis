@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from pathlib import Path
 from numpy import pi
+from sklearn.preprocessing import minmax_scale
 # from torchvision.transforms import v2
 from torchvision import transforms as tv_transforms
 from torchvision.io import read_image
@@ -35,24 +36,30 @@ def build_p2p_model_and_implant(size, axlambda=100, rho=150, range_limit=13):
     
     return p2p_model, square16_implant
 
-def get_percept(image, p2p_model, implant, normalize=False, filter_type=None):
-    if normalize:
-        image *= 255.0/image.max()
-    image_stim = ImageStimulus(image).rgb2gray()
-    if filter_type is not None:
-        image_stim = image_stim.filter(filter_type)
+def get_percept(image, p2p_model, implant, normalize_patch=False, no_imagestimulus=False, filter_type=None):
+    if normalize_patch:
+        image /= 255.0
+    if no_imagestimulus:
+        image_stim = image.flatten()
+    else:
+        image_stim = ImageStimulus(image).rgb2gray()
+        if filter_type is not None:
+            image_stim = image_stim.filter(filter_type)
+    # print(np.max(image), np.min(image))
     implant.stim = image_stim
     percept = p2p_model.predict_percept(implant)
+    # print(np.max(percept.data), np.min(percept.data))
     return percept, image_stim
 
 def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
     crop_start = (p2p_patch_size // 2) - 1
     crop_end = crop_start + p2p_patch_size
+    num_channel = 1 if args.no_imagestimulus else 3
 
     """Full image to patches (new method)"""
     # num_patches = (args.image_size // args.patch_size) ** 2
     # print(f'image shape {image.shape}')  # shape (N, C, args.image_size, args.image_size)
-    patches = pypatchify.patchify_to_batches(image, (p2p_patch_size, p2p_patch_size, 3), batch_dim=0)
+    patches = pypatchify.patchify_to_batches(image, (p2p_patch_size, p2p_patch_size, num_channel), batch_dim=0)
     # patches = patches.permute(0, 2, 3, 1).cpu().detach().numpy()
     # print(f'patches shape {patches.shape}')  # shape (N * num_patches, args.patch_size, args.patch_size, C)
     # percept = []
@@ -67,14 +74,24 @@ def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
         # print(f"Thread {thread_index} starts")
         for i, patch in enumerate(patches):
             percept_index = start_index + i
-            patch_percept, image_stim = get_percept(patch, p2p_model, square16_implant, args.normalize_patch, args.filter_type)
+            patch_percept, image_stim = get_percept(patch, p2p_model, square16_implant, args.normalize_patch, args.no_imagestimulus, args.filter_type)
             # print(f'patch_percept shape {patch_percept.data.shape}')  # (27, 27, 1)
             # print(f'patch_percept shape {image_stim.data.shape}')  # (196, 1)
+
+            # take notes of the max of the patch
+            patch_max = np.max(patch)
+            patch_percept_rescaled = patch_percept.data
+            if patch_max > 0.0:
+                patch_percept_rescaled = minmax_scale(
+                    patch_percept.data.flatten(), 
+                    feature_range=(0, patch_max)
+                ).reshape(patch_percept.data.shape)
+
             if args.no_crop:
                 # print(f'patch_percept shape {patch_percept.data.shape}')
-                percept[percept_index] = patch_percept.data
+                percept[percept_index] = patch_percept_rescaled
             else:
-                crop_percept = patch_percept.data[crop_start:crop_end, crop_start:crop_end, :]
+                crop_percept = patch_percept_rescaled[crop_start:crop_end, crop_start:crop_end, :]
                 percept[percept_index] = crop_percept
             if args.save_stim:
                 full_image_stim[percept_index] = image_stim.data.reshape((patch.shape[0], patch.shape[1], 1))
@@ -82,20 +99,23 @@ def image2percept(image, args, p2p_patch_size, p2p_model, square16_implant):
             #     print(f"percept_index {percept_index}")
 
     """Threading"""
-    num_thread = min(32768, int(math.sqrt(patches.shape[0])))
-    print(f'num_thread {num_thread}')
     # percept = np.zeros((patches.shape[0], 56, 56, 1))
     percept = [None] * patches.shape[0]
     full_image_stim = [None] * patches.shape[0]
-    list_of_patches = np.array_split(patches, num_thread)
-    threads = [None] * num_thread
-    next_chunk_start_index = 0
-    for i in range(num_thread):
-        threads[i] = threading.Thread(target=percept_task, args=(args, next_chunk_start_index, list_of_patches[i], percept, i, ))
-        threads[i].start()
-        next_chunk_start_index += len(list_of_patches[i])
-    for i in range(num_thread):
-        threads[i].join()
+    if args.no_threading:
+        percept_task(args, 0, patches, percept, 0)
+    else:
+        num_thread = min(32768  , int(math.sqrt(patches.shape[0])))
+        print(f'num_thread {num_thread}')
+        list_of_patches = np.array_split(patches, num_thread)
+        threads = [None] * num_thread
+        next_chunk_start_index = 0
+        for i in range(num_thread):
+            threads[i] = threading.Thread(target=percept_task, args=(args, next_chunk_start_index, list_of_patches[i], percept, i, ))
+            threads[i].start()
+            next_chunk_start_index += len(list_of_patches[i])
+        for i in range(num_thread):
+            threads[i].join()                           
 
     percept = np.array(percept)
     # percept = torch.tensor(np.array(percept), device=args.device).permute(0, 3, 1, 2)  # move the channel to the second dim
@@ -131,7 +151,7 @@ def img_generator(files, image_size):
 
 def batch_imgs_generator(files, args):
     # imgs = torch.zeros((args.batch_size, 3, args.image_size, args.image_size), dtype=torch.float32)
-    imgs = np.zeros((args.batch_size, args.image_size, args.image_size, 3))
+    imgs = [None] * args.batch_size
     img_paths = [None] * args.batch_size
     i = 0
     for image_file in files:
@@ -160,12 +180,18 @@ def batch_imgs_generator(files, args):
         # ])
         # img = transform(img)
         # save_image(img, saved_dir + "org_" + image_name)
-        img = cv2.imread(image_file)
-        img = cv2.resize(img, (args.image_size, args.image_size))
+        if args.no_imagestimulus:
+            img = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
+            img = cv2.resize(img, (args.image_size, args.image_size))
+            img = np.expand_dims(img, axis=2)
+        else:
+            img = cv2.imread(image_file)
+            img = cv2.resize(img, (args.image_size, args.image_size))
         img = np.array(img, dtype=np.float64)
         if args.normalize:
-            img *= 255.0/img.max()
-        imgs[i, :, :, :] = img
+            img /= 255.0
+        # print(img.shape, np.max(img), np.min(img))
+        imgs[i] = img
 
         # print(f'imgs[i] shape {imgs[i].shape}')
         # print(f'imgs[i] type {type(imgs[i])}')
@@ -181,9 +207,9 @@ def batch_imgs_generator(files, args):
         i += 1
         if i == args.batch_size:
             i = 0
-            yield img_paths, imgs, [path.replace(".jpg", "_stim.jpg") for path in img_paths]
+            yield img_paths, np.array(imgs), [path.replace(".jpg", "_stim.jpg") for path in img_paths]
     if i > 0:
-        yield img_paths, imgs[:len(img_paths), :, :, :], [path.replace(".jpg", "_stim.jpg") for path in img_paths]
+        yield img_paths, np.array(imgs[:len(img_paths), :, :, :]), [path.replace(".jpg", "_stim.jpg") for path in img_paths]
 
 def main():
     parser = argparse.ArgumentParser('Create percept from pulse2percept')
@@ -201,6 +227,8 @@ def main():
     parser.add_argument("--save_stim", action='store_true', default=False, help="Save stimulus before input to pulse2percept.")
     parser.add_argument("--normalize", action='store_true', default=False, help="Normalize image.")
     parser.add_argument("--normalize_patch", action='store_true', default=False, help="Normalize over single patch only.")
+    parser.add_argument("--no_imagestimulus", action='store_true', default=False, help="Don't use the ImageStimulus class.")
+    parser.add_argument("--no_threading", action='store_true', default=False, help="Don't use thread.")
     parser.add_argument("--time_track", action='store_true', default=False, help="Track time during the pulse2percept.")
     args = parser.parse_args()
 

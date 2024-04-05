@@ -241,6 +241,12 @@ class ModelWithMaskedLastFeature(nn.Module):
         self.n_last_blocks = n_last_blocks
         self.autocast_ctx = autocast_ctx
         self.args = args
+        self.args.no_threading = False
+        self.args.no_imagestimulus = False
+        self.args.normalize_patch = False
+        self.args.no_crop = False
+        self.args.save_stim = False
+        self.args.filter_type = None
         self.p2p_patch_size = args.patch_size
         self.p2p_model, self.square16_implant = build_p2p_model_and_implant(size=self.p2p_patch_size)
 

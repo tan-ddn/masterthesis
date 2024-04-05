@@ -1,0 +1,189 @@
+2024-04-05 15:43:41,751 [torch.distributed.distributed_c10d] [INFO] Added key: store_based_barrier_key:1 to store for rank: 0
+2024-04-05 15:43:41,751 [torch.distributed.distributed_c10d] [INFO] Rank 0: Completed store-based barrier for key:store_based_barrier_key:1 with 1 nodes.
+2024-04-05 15:43:42,967 [dinov2] [INFO] git:
+  sha: 830bc4b6b49d7b25181cd1dc0c9ed7572d4b1835, status: has uncommitted changes, branch: main
+
+2024-04-05 15:43:42,968 [dinov2] [INFO] batch_size: 512
+checkpoint_key: teacher
+classifier_fpath: None
+config_file: /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml
+device: cuda
+epoch_length: 2501
+epochs: 10
+eval_period_iterations: 2501
+fixation_grayscale: False
+fixation_top: 0.1
+image_grayscale: False
+image_size: 224
+learning_rates: [1e-05, 2e-05, 5e-05, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+n_last_blocks: 4
+no_resume: False
+norm: norm_after_p2p
+num_workers: 1
+opts: ['train.output_dir=/work/scratch/tnguyen/dinov2/fixation/0']
+output_dir: /work/scratch/tnguyen/dinov2/fixation/0
+p2p_no_tar: True
+patch_size: 14
+pretrained_weights: /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth
+pulse2percept: True
+run_on_cluster: False
+save_checkpoint_frequency: 1
+test_class_mapping_fpaths: [None]
+test_dataset_strs: None
+test_metric_types: None
+train_dataset_str: ImageNetWds
+val_class_mapping_fpath: None
+val_dataset_str: ImageNetWds
+val_metric_type: mean_accuracy
+2024-04-05 15:43:42,969 [dinov2] [INFO] sqrt scaling learning rate; base: 0.004, new: 0.001
+2024-04-05 15:43:42,983 [dinov2] [INFO] MODEL:
+  WEIGHTS: ''
+compute_precision:
+  grad_scaler: true
+  teacher:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+  student:
+    backbone:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp16
+        buffer_dtype: fp32
+    dino_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+    ibot_head:
+      sharding_strategy: SHARD_GRAD_OP
+      mixed_precision:
+        param_dtype: fp16
+        reduce_dtype: fp32
+        buffer_dtype: fp32
+dino:
+  loss_weight: 1.0
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+  koleo_loss_weight: 0.1
+ibot:
+  loss_weight: 1.0
+  mask_sample_probability: 0.5
+  mask_ratio_min_max:
+  - 0.1
+  - 0.5
+  separate_head: false
+  head_n_prototypes: 65536
+  head_bottleneck_dim: 256
+  head_nlayers: 3
+  head_hidden_dim: 2048
+train:
+  batch_size_per_gpu: 64
+  dataset_path: ImageNet:split=TRAIN
+  output_dir: /work/scratch/tnguyen/dinov2/fixation/0
+  saveckp_freq: 20
+  seed: 0
+  num_workers: 10
+  OFFICIAL_EPOCH_LENGTH: 1250
+  cache_dataset: true
+  centering: centering
+student:
+  arch: vit_small
+  patch_size: 14
+  drop_path_rate: 0.3
+  layerscale: 1.0e-05
+  drop_path_uniform: true
+  pretrained_weights: ''
+  ffn_layer: mlp
+  block_chunks: 0
+  qkv_bias: true
+  proj_bias: true
+  ffn_bias: true
+  num_register_tokens: 0
+  interpolate_antialias: false
+  interpolate_offset: 0.1
+teacher:
+  momentum_teacher: 0.992
+  final_momentum_teacher: 1
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 30
+optim:
+  epochs: 100
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+  base_lr: 0.004
+  lr: 0.001
+  warmup_epochs: 10
+  min_lr: 1.0e-06
+  clip_grad: 3.0
+  freeze_last_layer_epochs: 1
+  scaling_rule: sqrt_wrt_1024
+  patch_embed_lr_mult: 0.2
+  layerwise_decay: 0.9
+  adamw_beta1: 0.9
+  adamw_beta2: 0.999
+crops:
+  global_crops_scale:
+  - 0.32
+  - 1.0
+  local_crops_number: 8
+  local_crops_scale:
+  - 0.05
+  - 0.32
+  global_crops_size: 518
+  local_crops_size: 98
+evaluation:
+  eval_period_iterations: 12500
+
+2024-04-05 15:43:43,006 [dinov2] [INFO] using MLP layer as FFN
+2024-04-05 15:43:43,450 [dinov2] [INFO] Pretrained weights found at /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth and loaded with msg: <All keys matched successfully>
+2024-04-05 15:43:43,519 [py.warnings] [WARNING] /work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+2024-04-05 15:43:47,579 [iopath.common.file_io] [ERROR] An exception occurred in telemetry logging.Disabling telemetry to prevent further exceptions.
+Traceback (most recent call last):
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/file_io.py", line 946, in __log_tmetry_keys
+    handler.log_event()
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/event_logger.py", line 97, in log_event
+    del self._evt
+AttributeError: _evt
+2024-04-05 15:43:47,581 [fvcore.common.checkpoint] [INFO] No checkpoint found. Initializing model from scratch
+2024-04-05 15:43:47,582 [dinov2] [INFO] sampler: none
+2024-04-05 15:43:47,583 [dinov2] [INFO] using PyTorch data loader
+2024-04-05 15:43:47,583 [dinov2] [INFO] # of batches: 2,502
+2024-04-05 15:43:47,584 [py.warnings] [WARNING] /work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+  warnings.warn(
+
+2024-04-05 15:43:47,585 [dinov2] [INFO] sampler: none
+2024-04-05 15:43:47,585 [dinov2] [INFO] using PyTorch data loader
+2024-04-05 15:43:47,586 [dinov2] [INFO] # of batches: 98
+2024-04-05 15:43:47,586 [dinov2] [INFO] Epoch 0
+2024-04-05 15:43:47,587 [iopath.common.file_io] [ERROR] An exception occurred in telemetry logging.Disabling telemetry to prevent further exceptions.
+Traceback (most recent call last):
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/file_io.py", line 946, in __log_tmetry_keys
+    handler.log_event()
+  File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/event_logger.py", line 97, in log_event
+    del self._evt
+AttributeError: _evt
+2024-04-05 15:43:47,588 [fvcore.common.checkpoint] [INFO] No checkpoint found. Initializing model from scratch
+2024-04-05 15:43:47,588 [dinov2] [INFO] Starting training from iteration 0
