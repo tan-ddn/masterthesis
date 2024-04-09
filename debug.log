@@ -1,9 +1,9 @@
-2024-04-05 15:43:41,751 [torch.distributed.distributed_c10d] [INFO] Added key: store_based_barrier_key:1 to store for rank: 0
-2024-04-05 15:43:41,751 [torch.distributed.distributed_c10d] [INFO] Rank 0: Completed store-based barrier for key:store_based_barrier_key:1 with 1 nodes.
-2024-04-05 15:43:42,967 [dinov2] [INFO] git:
-  sha: 830bc4b6b49d7b25181cd1dc0c9ed7572d4b1835, status: has uncommitted changes, branch: main
+2024-04-05 16:10:20,059 [torch.distributed.distributed_c10d] [INFO] Added key: store_based_barrier_key:1 to store for rank: 0
+2024-04-05 16:10:20,059 [torch.distributed.distributed_c10d] [INFO] Rank 0: Completed store-based barrier for key:store_based_barrier_key:1 with 1 nodes.
+2024-04-05 16:10:21,225 [dinov2] [INFO] git:
+  sha: 7bba24d85d181db51224716cc5b95a5b160a983c, status: has uncommitted changes, branch: main
 
-2024-04-05 15:43:42,968 [dinov2] [INFO] batch_size: 512
+2024-04-05 16:10:21,226 [dinov2] [INFO] batch_size: 512
 checkpoint_key: teacher
 classifier_fpath: None
 config_file: /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml
@@ -35,8 +35,8 @@ train_dataset_str: ImageNetWds
 val_class_mapping_fpath: None
 val_dataset_str: ImageNetWds
 val_metric_type: mean_accuracy
-2024-04-05 15:43:42,969 [dinov2] [INFO] sqrt scaling learning rate; base: 0.004, new: 0.001
-2024-04-05 15:43:42,983 [dinov2] [INFO] MODEL:
+2024-04-05 16:10:21,227 [dinov2] [INFO] sqrt scaling learning rate; base: 0.004, new: 0.001
+2024-04-05 16:10:21,236 [dinov2] [INFO] MODEL:
   WEIGHTS: ''
 compute_precision:
   grad_scaler: true
@@ -155,35 +155,35 @@ crops:
 evaluation:
   eval_period_iterations: 12500
 
-2024-04-05 15:43:43,006 [dinov2] [INFO] using MLP layer as FFN
-2024-04-05 15:43:43,450 [dinov2] [INFO] Pretrained weights found at /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth and loaded with msg: <All keys matched successfully>
-2024-04-05 15:43:43,519 [py.warnings] [WARNING] /work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+2024-04-05 16:10:21,251 [dinov2] [INFO] using MLP layer as FFN
+2024-04-05 16:10:21,681 [dinov2] [INFO] Pretrained weights found at /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth and loaded with msg: <All keys matched successfully>
+2024-04-05 16:10:21,754 [py.warnings] [WARNING] /work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
   warnings.warn(
 
-2024-04-05 15:43:47,579 [iopath.common.file_io] [ERROR] An exception occurred in telemetry logging.Disabling telemetry to prevent further exceptions.
+2024-04-05 16:10:26,202 [iopath.common.file_io] [ERROR] An exception occurred in telemetry logging.Disabling telemetry to prevent further exceptions.
 Traceback (most recent call last):
   File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/file_io.py", line 946, in __log_tmetry_keys
     handler.log_event()
   File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/event_logger.py", line 97, in log_event
     del self._evt
 AttributeError: _evt
-2024-04-05 15:43:47,581 [fvcore.common.checkpoint] [INFO] No checkpoint found. Initializing model from scratch
-2024-04-05 15:43:47,582 [dinov2] [INFO] sampler: none
-2024-04-05 15:43:47,583 [dinov2] [INFO] using PyTorch data loader
-2024-04-05 15:43:47,583 [dinov2] [INFO] # of batches: 2,502
-2024-04-05 15:43:47,584 [py.warnings] [WARNING] /work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
+2024-04-05 16:10:26,203 [fvcore.common.checkpoint] [INFO] No checkpoint found. Initializing model from scratch
+2024-04-05 16:10:26,204 [dinov2] [INFO] sampler: none
+2024-04-05 16:10:26,204 [dinov2] [INFO] using PyTorch data loader
+2024-04-05 16:10:26,205 [dinov2] [INFO] # of batches: 2,502
+2024-04-05 16:10:26,205 [py.warnings] [WARNING] /work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/torchvision/transforms/v2/_deprecated.py:41: UserWarning: The transform `ToTensor()` is deprecated and will be removed in a future release. Instead, please use `transforms.Compose([transforms.ToImageTensor(), transforms.ConvertImageDtype()])`.
   warnings.warn(
 
-2024-04-05 15:43:47,585 [dinov2] [INFO] sampler: none
-2024-04-05 15:43:47,585 [dinov2] [INFO] using PyTorch data loader
-2024-04-05 15:43:47,586 [dinov2] [INFO] # of batches: 98
-2024-04-05 15:43:47,586 [dinov2] [INFO] Epoch 0
-2024-04-05 15:43:47,587 [iopath.common.file_io] [ERROR] An exception occurred in telemetry logging.Disabling telemetry to prevent further exceptions.
+2024-04-05 16:10:26,206 [dinov2] [INFO] sampler: none
+2024-04-05 16:10:26,206 [dinov2] [INFO] using PyTorch data loader
+2024-04-05 16:10:26,206 [dinov2] [INFO] # of batches: 98
+2024-04-05 16:10:26,206 [dinov2] [INFO] Epoch 0
+2024-04-05 16:10:26,207 [iopath.common.file_io] [ERROR] An exception occurred in telemetry logging.Disabling telemetry to prevent further exceptions.
 Traceback (most recent call last):
   File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/file_io.py", line 946, in __log_tmetry_keys
     handler.log_event()
   File "/work/scratch/tnguyen/miniconda3/envs/dinov2/lib/python3.9/site-packages/iopath/common/event_logger.py", line 97, in log_event
     del self._evt
 AttributeError: _evt
-2024-04-05 15:43:47,588 [fvcore.common.checkpoint] [INFO] No checkpoint found. Initializing model from scratch
-2024-04-05 15:43:47,588 [dinov2] [INFO] Starting training from iteration 0
+2024-04-05 16:10:26,208 [fvcore.common.checkpoint] [INFO] No checkpoint found. Initializing model from scratch
+2024-04-05 16:10:26,208 [dinov2] [INFO] Starting training from iteration 0
