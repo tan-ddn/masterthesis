@@ -209,7 +209,8 @@ def batch_imgs_generator(files, args):
             i = 0
             yield img_paths, np.array(imgs), [path.replace(".jpg", "_stim.jpg") for path in img_paths]
     if i > 0:
-        yield img_paths, np.array(imgs[:len(img_paths), :, :, :]), [path.replace(".jpg", "_stim.jpg") for path in img_paths]
+        imgs = imgs[:len(img_paths)]
+        yield img_paths, np.array(imgs), [path.replace(".jpg", "_stim.jpg") for path in img_paths]
 
 def main():
     parser = argparse.ArgumentParser('Create percept from pulse2percept')

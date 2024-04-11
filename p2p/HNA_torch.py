@@ -152,25 +152,36 @@ class AxonMapSpatialModule(torch.nn.Module):
         rho = inputs[1][:, 0][:, None]
         axlambda = inputs[1][:, 1][:, None]
 
-        # apply axon map
-        intensities =   (
-                        amp[:, None, None, :] * # 1, 1, 1, 225
-                        torch.exp(   # gauss
-                                    -self.d2_el[None, :, :, :] / # dist2el 1, 2401, 118, 225
-                                    (2. * rho**2)[:, None, None, :] # 1, 1, 1, 225
-                                    + # contribution of each electode to each axon segement of each
-                                      # pixel by distance of segemnt to electrode
-                                    self.axon_contrib[None, :, :, 2, None] / # sens 1, 2401, 118, 1
-                                    (axlambda**2)[:, None, None, :] # 1, 1, 1 , 225
-                                      # contribution of each electode to each axon segement of each
-                                      # pixel by sensitivity, which is scaled by distance along axon
-                                 ) # 1, 2401, 118, 225, scaling between 0, 1
-                        ) # 1, 2401, 118, 225
+        # # apply axon map
+        # intensities =   (
+        #                 amp[:, None, None, :] * # 1, 1, 1, 225
+        #                 torch.exp(   # gauss
+        #                             -self.d2_el[None, :, :, :] / # dist2el 1, 2401, 118, 225
+        #                             (2. * rho**2)[:, None, None, :] # 1, 1, 1, 225
+        #                             + # contribution of each electode to each axon segement of each
+        #                               # pixel by distance of segemnt to electrode
+        #                             self.axon_contrib[None, :, :, 2, None] / # sens 1, 2401, 118, 1
+        #                             (axlambda**2)[:, None, None, :] # 1, 1, 1 , 225
+        #                               # contribution of each electode to each axon segement of each
+        #                               # pixel by sensitivity, which is scaled by distance along axon
+        #                          ) # 1, 2401, 118, 225, scaling between 0, 1
+        #                 ) # 1, 2401, 118, 225
 
 
 
-        # after summing up...
-        intensities_per_axon = torch.sum(intensities, axis=-1)
+        # # after summing up...
+        # intensities_per_axon = torch.sum(intensities, axis=-1)
+
+        amp = amp[:, None, None, :] 
+        lambda_para = (axlambda**2)[:, None, None, :]
+        rho = (2. * rho**2)[:, None, None, :]
+
+        intensities_per_axon = ([(a_ *  torch.exp(
+                                    -self.d2_el[None, :, :, :] / rho +
+                                    self.axon_contrib[None, :, :, 2, None] / lambda_para)).sum(axis=-1) for a_ in amp ])
+
+        intensities_per_axon = torch.stack(intensities_per_axon, dim=0)
+
         intensities = torch.take_along_dim(
             intensities_per_axon, intensities_per_axon.abs().max(-1, keepdim=True).indices, dim=-1).squeeze(-1)
 

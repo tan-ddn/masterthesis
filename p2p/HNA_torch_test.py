@@ -5,23 +5,33 @@ import torch
 import cv2
 import pypatchify
 
+from torch.profiler import profile, record_function, ProfilerActivity
 from sklearn.preprocessing import minmax_scale
 from pulse2percept.models import AxonMapModel
-from pulse2percept.implants import ElectrodeGrid, ProsthesisSystem
+from pulse2percept.implants import ElectrodeGrid, ProsthesisSystem, DiskElectrode
 from HNA_torch import AxonMapSpatialModule, UniversalBiphasicAxonMapModule
+from torch_p2p_dinov2_masked_model import AxonMapSpatialModifiedModule
 
 
 p2p_patch_size = 14
-SPACE = 300
+rho = 437
+axlambda = 1420
+range_limit = 5
+xystep = 0.75
+disk_electrode_radius = 100
+spacing = 575
 
-def build_p2pmodel_and_implant(size, axlambda=100, rho=150, range_limit=13):
+chunk_length = 256
+
+def build_p2pmodel_and_implant(size=14, axlambda=100, rho=150, range_limit=range_limit):
     p2pmodel = AxonMapModel(
         axlambda=axlambda, rho=rho, 
-        xrange=(-range_limit, range_limit), yrange=(-range_limit, range_limit), xystep=1
+        xrange=(-range_limit, range_limit), yrange=(-range_limit, range_limit), xystep=xystep
     )
     p2pmodel.build()
 
-    implant = ProsthesisSystem(earray=ElectrodeGrid((size, size), SPACE))
+    disk_grid = ElectrodeGrid((size, size), spacing, etype=DiskElectrode, r=disk_electrode_radius)  # size = 14  | DiskElectrode?
+    implant = ProsthesisSystem(earray=disk_grid)
     
     return p2pmodel, implant
 
@@ -35,30 +45,39 @@ device = torch.device("cuda")
 
 start = time.time()
 
-p2pmodel, implant = build_p2pmodel_and_implant(p2p_patch_size, axlambda=1420, rho=437)
-decoder = AxonMapSpatialModule(p2pmodel, implant, amp_cutoff=True)
+p2pmodel, implant = build_p2pmodel_and_implant(p2p_patch_size, axlambda=axlambda, rho=rho, range_limit=range_limit)
+# decoder = AxonMapSpatialModule(p2pmodel, implant, amp_cutoff=True)
+decoder = AxonMapSpatialModifiedModule(torch.tensor([[rho]]), torch.tensor([[axlambda]]), p2pmodel, implant, amp_cutoff=True, chunk_length=chunk_length)
 # decoder = UniversalBiphasicAxonMapModule(p2pmodel, implant, amp_cutoff=True)
 print(decoder.percept_shape)
 decoder.to(device)
 for p in decoder.parameters():
     p.requires_grad = False
+decoder.eval()
+
+decoder2 = AxonMapSpatialModifiedModule(torch.tensor([[rho]]), torch.tensor([[axlambda]]), p2pmodel, implant, amp_cutoff=True, chunk_length=0)
+print(decoder2.percept_shape)
+decoder2.to(device)
+for p in decoder2.parameters():
+    p.requires_grad = False
+decoder2.eval()
 
 img = cv2.imread('/home/students/tnguyen/masterthesis/plots/437_1420/train/n03026506/n03026506_2749_stim.jpg', 0)
 img = np.expand_dims(np.expand_dims(img, axis=2), axis=0)
 print(img.shape, np.max(img), np.min(img))
 
-patches = pypatchify.patchify_to_batches(torch.tensor(img, device=device), (p2p_patch_size, p2p_patch_size, 1), batch_dim=0)
+patches = pypatchify.patchify_to_batches(torch.tensor(img, dtype=torch.float, device=device), (p2p_patch_size, p2p_patch_size, 1), batch_dim=0)
+# patches /= 255.0
 print(patches.shape, torch.max(patches), torch.min(patches))
 
 patches = torch.flatten(patches, start_dim=1)
 
-phis = get_patient_params(p2pmodel, patches)
-print(phis.shape)
+# phis = get_patient_params(p2pmodel, patches)
+# print(phis.shape)
 
-decoder.eval()
-crop_start = (p2p_patch_size // 2) - 1
+crop_start = (decoder.percept_shape[0] - p2p_patch_size) // 2
 crop_end = crop_start + p2p_patch_size
-percept = torch.zeros((patches.shape[0], 1, p2p_patch_size, p2p_patch_size), device=device)
+percept = torch.zeros((patches.shape[0], p2p_patch_size, p2p_patch_size), device=device)
 # for i, patch in enumerate(patches):
 #     patch, phis = patch.unsqueeze(0), phis.unsqueeze(0)
 #     print(f'patch shape, phis shape {patch.shape, phis.shape}')
@@ -74,32 +93,58 @@ percept = torch.zeros((patches.shape[0], 1, p2p_patch_size, p2p_patch_size), dev
 
 # percept = decoder([patches, phis])[:, crop_start:crop_end, crop_start:crop_end]
 
-chunk_length = 32
+before_decoder = time.time()
+chunk_length = chunk_length
 list_of_patches = torch.split(patches, chunk_length)
 print(f"chunk shape {list_of_patches[0].shape}")
-phis = phis.unsqueeze(0)
-for i, patch_chunk in enumerate(list_of_patches):
-    print(f'phis shape {phis.shape}')
-    patch_percept_rescaled = decoder([patch_chunk, phis])[:, crop_start:crop_end, crop_start:crop_end].unsqueeze(1)
-    # print(patch_percept_rescaled.shape, torch.max(patch_percept_rescaled), torch.min(patch_percept_rescaled))
+# phis = phis.unsqueeze(0)
+with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True) as prof:
+    with record_function("model_inference"):
+        for i, patch_chunk in enumerate(list_of_patches):  # replace with vectorization
+            # print(f'phis shape {phis.shape}')
+            patch_percept_rescaled = decoder(patch_chunk)[:, crop_start:crop_end, crop_start:crop_end]  # (32, 14x14); (1, 2)
+            # print(patch_percept_rescaled.shape, torch.max(patch_percept_rescaled), torch.min(patch_percept_rescaled))
 
-    # # take notes of the max of the patch
-    # patch_max = torch.max(patch_chunk)
-    # if patch_max > 0.0:
-    #     patch_percept_rescaled = (patch_percept_rescaled - patch_percept_rescaled.min())/(patch_percept_rescaled.max() - patch_percept_rescaled.min())*patch_max
+            # # take notes of the max of the patch
+            # patch_max = torch.max(patch_chunk)
+            # if patch_max > 0.0:
+            #     patch_percept_rescaled = (patch_percept_rescaled - patch_percept_rescaled.min())/(patch_percept_rescaled.max() - patch_percept_rescaled.min())*patch_max
 
-    percept[i*chunk_length:((i+1)*chunk_length)] = patch_percept_rescaled
-    del patch_percept_rescaled
+            percept[i*chunk_length:((i+1)*chunk_length)] = patch_percept_rescaled
+            del patch_percept_rescaled
+        
+        # percept = decoder([patches, phis])[:, crop_start:crop_end, crop_start:crop_end]
+        # percept = decoder(patches)[:, crop_start:crop_end, crop_start:crop_end]
 
-# take notes of the max of the patch
-patch_max = torch.max(patches)
-if patch_max > 0.0:
-    percept = (percept - percept.min())/(percept.max() - percept.min())*patch_max
+        # take notes of the max of the patch
+        patch_max = torch.max(patches) #* 255
+        if patch_max > 0.0:
+            percept = (percept - percept.min())/(percept.max() - percept.min())*patch_max
 
-print(percept.shape)
-percept = pypatchify.unpatchify_from_batches(percept, (1, 224, 224), batch_dim=0)
+        percept = percept.unsqueeze(1)
+        print(percept.shape)
+        percept = pypatchify.unpatchify_from_batches(percept, (1, 224, 224), batch_dim=0)
 
-cv2.imwrite('/home/students/tnguyen/masterthesis/plots/437_1420/train/n03026506/AxonMap_torch_test.jpg', np.tile(percept.permute(0, 2, 3, 1).cpu().detach().numpy(), (1, 1, 1, 3)).squeeze())
+print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
+# cv2.imwrite('/home/students/tnguyen/masterthesis/plots/437_1420/train/n03026506/AxonMap_torch_test.jpg', np.tile(percept.permute(0, 2, 3, 1).cpu().detach().numpy(), (1, 1, 1, 3)).squeeze())
 
 end = time.time()
-print(f"Time elapsed: {end - start}")
+print(f"Decoder 1 time elapsed: {end - before_decoder}")
+before_decoder2 = time.time()
+with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True) as prof:
+    with record_function("model_inference"):
+        percept = decoder2(patches)[:, crop_start:crop_end, crop_start:crop_end]
+
+        # take notes of the max of the patch
+        patch_max = torch.max(patches) #* 255
+        if patch_max > 0.0:
+            percept = (percept - percept.min())/(percept.max() - percept.min())*patch_max
+
+        percept = percept.unsqueeze(1)
+        print(percept.shape)
+        percept = pypatchify.unpatchify_from_batches(percept, (1, 224, 224), batch_dim=0)
+
+print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
+print(f"Decoder 2 time elapsed: {time.time() - before_decoder2}")
+
+# print(f"Time elapsed: {end - start}")  # pytorch profiler

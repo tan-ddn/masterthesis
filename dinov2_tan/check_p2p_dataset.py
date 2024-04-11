@@ -78,7 +78,8 @@ def read_image_max_min(file_path):
 
 if __name__ == '__main__':
     imnet_dir_path = r'/images/PublicDatasets/imagenet/train/'
-    p2p_dir_path = r'/images/innoretvision/eye/imagenet_patch/p2p/train/'
+    # p2p_dir_path = r'/images/innoretvision/eye/imagenet_patch/p2p/train/'
+    p2p_dir_path = r'/images/innoretvision/eye/imagenet_patch/p2p_r437_l1420/train/' 
 
     # imnet_dirs = []
     # for dirnames in os.listdir(imnet_dir_path):
@@ -108,15 +109,15 @@ if __name__ == '__main__':
     #         print(f'Folder {imnet_dir}: Imnet files {imnet_count} - P2P files {p2p_count}')
     # print(f'Total files in p2p {p2p_total}')
 
-    # """Check images that haven't been processed by p2p to create p2p dataset"""
-    # left_images = get_left_images(imnet_dir_path, p2p_dir_path, RANGE)
-    # left_images = list(left_images.values())
-    # left_images = [x for sublist in left_images for x in sublist]
-    # left_images = list(reversed(left_images))
+    """Check images that haven't been processed by p2p to create p2p dataset"""
+    left_images = get_left_images(imnet_dir_path, p2p_dir_path, RANGE)
+    left_images = list(left_images.values())
+    left_images = [x for sublist in left_images for x in sublist]
+    left_images = list(reversed(left_images))
 
-    # print(left_images[0])
+    print(left_images[0])
     # main(left_images)
 
-    """Check max and min values of the images in p2p dataset"""
-    files = glob.glob(os.path.join(p2p_dir_path, "*/*.jpg"))
-    read_image_max_min(files[12345])
+    # """Check max and min values of the images in p2p dataset"""
+    # files = glob.glob(os.path.join(p2p_dir_path, "*/*.jpg"))
+    # read_image_max_min(files[12345])
