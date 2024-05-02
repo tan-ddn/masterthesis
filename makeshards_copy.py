@@ -86,6 +86,9 @@ def write_dataset(imagenet, base="./shards", split="train"):
     # This is the output pattern under which we write shards.
     pattern = os.path.join(base, f"imagenet-{split}-%06d.tar")
 
+    classes = [0] * 1000
+    class_limit = 100
+
     with wds.ShardWriter(pattern, maxsize=int(args.maxsize), maxcount=int(args.maxcount)) as sink:
         for i in tqdm(indexes,
             desc="writing imagenet train data}",
@@ -97,6 +100,9 @@ def write_dataset(imagenet, base="./shards", split="train"):
             fname, cls = ds.imgs[i]
             # fname, cls = ds.samples[i]
             assert cls == ds.targets[i]
+
+            if classes[cls] >= class_limit:
+                continue
 
             # Read the JPEG-compressed image file contents.
             image = readfile(fname)
@@ -116,6 +122,7 @@ def write_dataset(imagenet, base="./shards", split="train"):
             # Write the sample to the sharded tar archives.
             try:
                 sink.write(sample)
+                classes[cls] += 1
             except:
                 tqdm.write("error in writing, ignore this sample")
                 continue

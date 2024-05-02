@@ -232,6 +232,7 @@ if __name__ == '__main__':
         img = Image.open(BytesIO(response.content))
         img = img.convert('RGB')
     elif os.path.isfile(args.image_path):
+        image_dir, image_name = os.path.split(args.image_path)
         with open(args.image_path, 'rb') as f:
             img = Image.open(f)
             img = img.convert('RGB')
@@ -241,7 +242,7 @@ if __name__ == '__main__':
     transform = pth_transforms.Compose([
         pth_transforms.Resize((args.image_size, args.image_size)),
         pth_transforms.ToTensor(),
-        pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        # pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
     img = transform(img)
     print(f"img shape {img.shape}")
@@ -253,7 +254,8 @@ if __name__ == '__main__':
     w_featmap = img.shape[-2] // args.patch_size
     h_featmap = img.shape[-1] // args.patch_size
 
-    attentions = model.get_last_selfattention(img.to(device))
+    # attentions = model.get_last_selfattention(img.to(device))
+    _, attentions = model.get_last_selfattention(img.to(device), n=4)
     print(f"attentions shape {attentions.shape}")
 
     nh = attentions.shape[1] # number of head
@@ -280,13 +282,29 @@ if __name__ == '__main__':
 
     # save attentions heatmaps
     os.makedirs(args.output_dir, exist_ok=True)
-    torchvision.utils.save_image(torchvision.utils.make_grid(img, normalize=True, scale_each=True), os.path.join(args.output_dir, "img.png"))
-    for j in range(nh):
-        fname = os.path.join(args.output_dir, "attn-head" + str(j) + ".png")
-        plt.imsave(fname=fname, arr=attentions[j], format='png')
-        print(f"{fname} saved.")
+    torchvision.utils.save_image(torchvision.utils.make_grid(img, normalize=True, scale_each=True), os.path.join(args.output_dir, "img_" + image_name))
+    # for j in range(nh):
+    #     fname = os.path.join(args.output_dir, "attn-head" + str(j) + ".png")
+    #     plt.imsave(fname=fname, arr=attentions[j], format='png')
+    #     print(f"{fname} saved.")
 
+    # if args.threshold is not None:
+    #     image = skimage.io.imread(os.path.join(args.output_dir, "img.png"))
+    #     for j in range(nh):
+    #         display_instances(image, th_attn[j], fname=os.path.join(args.output_dir, "mask_th" + str(args.threshold) + "_head" + str(j) +".png"), blur=False)
+
+    # sum all attentions
+    attentions = np.sum(attentions, axis=0)
+    fname = os.path.join(args.output_dir, "attn-head_sum_" + image_name)
+    plt.imsave(fname=fname, arr=attentions, format='png')
+    print(f"{fname} saved.")
     if args.threshold is not None:
-        image = skimage.io.imread(os.path.join(args.output_dir, "img.png"))
-        for j in range(nh):
-            display_instances(image, th_attn[j], fname=os.path.join(args.output_dir, "mask_th" + str(args.threshold) + "_head" + str(j) +".png"), blur=False)
+        image = skimage.io.imread(os.path.join(args.output_dir, "img_" + image_name))
+        th_attn = np.ceil(np.sum(th_attn, axis=0) / 6.0)
+        display_instances(image, th_attn, fname=os.path.join(args.output_dir, "mask_th" + str(args.threshold) + "_head_sum_" + image_name), blur=False)
+        
+        print(th_attn.max(), th_attn.min())
+        fname = os.path.join(args.output_dir, "masked_img_" + str(args.threshold) + "_sum_" + image_name)
+        arr = (image * np.tile(np.expand_dims(th_attn, axis=2), (1, 1, 3))).astype(np.uint8)
+        # arr[arr == 0] = 255
+        plt.imsave(fname=fname, arr=arr, format='png')

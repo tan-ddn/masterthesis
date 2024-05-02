@@ -298,7 +298,8 @@ class DinoVisionTransformer(nn.Module):
             outputs = self._get_intermediate_layers_not_chunked(x, n)
         second_last_layer_output = outputs[-2]
         last_blk = self.blocks[-1]
-        attn, _ = last_blk(second_last_layer_output, return_attention=True)
+        # attn, _ = last_blk(second_last_layer_output, return_attention=True)
+        attn = last_blk(second_last_layer_output, return_attention=True)
         outputs = [self.norm(out) for out in outputs]
         class_tokens = [out[:, 0] for out in outputs]
         outputs = [out[:, 1 + self.num_register_tokens:] for out in outputs]

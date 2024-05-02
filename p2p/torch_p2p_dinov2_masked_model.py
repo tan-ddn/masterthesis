@@ -1,6 +1,7 @@
 import sys
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import pypatchify
 import gc
 from torchvision import transforms as pth_transforms
@@ -15,9 +16,10 @@ from p2p.HNA_torch import AxonMapSpatialModule, UniversalBiphasicAxonMapModule, 
 range_limit = 5
 xystep = 0.75
 disk_electrode_radius = 100
-spacing = 575
+# spacing = 575
+spacing = 400
 
-def build_p2pmodel_and_implant(size=14, axlambda=100, rho=150, range_limit=range_limit):
+def build_p2pmodel_and_implant(size=14, axlambda=100, rho=150, range_limit=range_limit, xystep=xystep):
     p2pmodel = AxonMapModel(
         axlambda=axlambda, rho=rho, 
         xrange=(-range_limit, range_limit), yrange=(-range_limit, range_limit), xystep=xystep
@@ -36,15 +38,20 @@ def get_patient_params(model, device, targets=None):
     return model_params
 
 def image2percept(img, p2p_patch_size, decoder, chunk_length=64):
-    crop_start = (decoder.percept_shape[0] - p2p_patch_size) // 2
-    crop_end = crop_start + p2p_patch_size
+    # crop_start = (decoder.percept_shape[0] - p2p_patch_size) // 2
+    # crop_end = crop_start + p2p_patch_size
+    margin  = int(decoder.percept_shape[0] * 0.1)
+    crop_start = int(decoder.percept_shape[0] * 0.25) - margin
+    crop_end = crop_start + int(decoder.percept_shape[0] * 0.5) + (2 * margin)
+    crop_size = crop_end - crop_start
 
     patches = pypatchify.patchify_to_batches(img, (1, p2p_patch_size, p2p_patch_size), batch_dim=0) # 512 images x 256 patches/img 
     # print(f"patches info {patches.shape}, {patches.max()}, {patches.min()}")
 
     patches = torch.flatten(patches, start_dim=1)
 
-    percept = torch.zeros((patches.shape[0], p2p_patch_size, p2p_patch_size), device=img.device)
+    # percept = torch.zeros((patches.shape[0], p2p_patch_size, p2p_patch_size), device=img.device)
+    percept = torch.zeros((patches.shape[0], crop_size, crop_size), device=img.device)
     # for i, patch in enumerate(patches):
     #     patch_percept_rescaled = decoder([patch.unsqueeze(0), phis.unsqueeze(0)])[:, crop_start:crop_end, crop_start:crop_end]
     #     # print(patch_percept_rescaled.shape, torch.max(patch_percept_rescaled), torch.min(patch_percept_rescaled))
@@ -84,12 +91,16 @@ def image2percept(img, p2p_patch_size, decoder, chunk_length=64):
         percept = (percept - percept.min())/(percept.max() - percept.min())*patch_max
 
     del patches
-    torch.cuda.empty_cache()
-    gc.collect()
 
     percept = percept.unsqueeze(1)
     # print(f"percept shape {percept.shape}")
-    percept = pypatchify.unpatchify_from_batches(percept, (1, 224, 224), batch_dim=0) # 512 images
+    # percept = pypatchify.unpatchify_from_batches(percept, (1, 224, 224), batch_dim=0) # 512 images
+    percept = pypatchify.unpatchify_from_batches(percept, (1, 16*crop_size, 16*crop_size), batch_dim=0) # 512 images
+    # print(f"percept shape {percept.shape}")
+    
+    """Resize percept back to desired shape"""
+    percept = F.interpolate(percept, size=(img.shape[2], img.shape[3]))
+
     return torch.tile(percept, (1, 3, 1, 1))
 
 
@@ -104,27 +115,33 @@ class ModelWithMaskedLastFeature(nn.Module):
         self.args = args
         self.p2p_patch_size = args.patch_size
         
-        p2pmodel, implant = build_p2pmodel_and_implant(self.p2p_patch_size, axlambda=args.axlambda, rho=args.rho)
-        # self.phis = get_patient_params(p2pmodel, args.device)
-        # self.decoder = AxonMapSpatialModule(p2pmodel, implant, amp_cutoff=True).to(args.device)
-        self.decoder = AxonMapSpatialModifiedModule(torch.tensor([[args.rho]]), torch.tensor([[args.axlambda]]), p2pmodel, implant, amp_cutoff=True, chunk_length=self.args.chunk_length).to(args.device)
-        for p in self.decoder.parameters():
-            p.requires_grad = False
-        self.decoder.eval()
-        self.to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=1)
-        self.percept_norm_for_dino = pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        if self.args.torch_p2p:
+            p2pmodel, implant = build_p2pmodel_and_implant(self.p2p_patch_size, axlambda=args.axlambda, rho=args.rho, range_limit=args.xyrange, xystep=args.xystep)
+            # self.phis = get_patient_params(p2pmodel, args.device)
+            # self.decoder = AxonMapSpatialModule(p2pmodel, implant, amp_cutoff=True).to(args.device)
+            self.decoder = AxonMapSpatialModifiedModule(torch.tensor([[args.rho]]), torch.tensor([[args.axlambda]]), p2pmodel, implant, amp_cutoff=True, chunk_length=self.args.chunk_length).to(args.device)
+            for p in self.decoder.parameters():
+                p.requires_grad = False
+            self.decoder.eval()
+            self.to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=1)
+            self.percept_norm_for_dino = pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 
     def forward(self, images):
         with torch.inference_mode():
             with self.autocast_ctx():
                 # print(f'top_attention {self.feature_model.top_attention}')
-                percepts = image2percept(self.to_grayscale_for_p2p(images), self.p2p_patch_size, self.decoder, self.args.chunk_length)
-                # print(f"percepts shape, max, and min {percepts.shape, percepts.max(), percepts.min()}")
-                features = self.feature_model.get_intermediate_layers_with_masked_feature(
-                    self.percept_norm_for_dino(percepts), self.n_last_blocks,
-                )
+                if self.args.torch_p2p:
+                    percepts = image2percept(self.to_grayscale_for_p2p(images), self.p2p_patch_size, self.decoder, self.args.chunk_length)
+                    # print(f"percepts shape, max, and min {percepts.shape, percepts.max(), percepts.min()}")
+                    features = self.feature_model.get_intermediate_layers_with_masked_feature(
+                        self.percept_norm_for_dino(percepts), self.n_last_blocks,
+                    )
+                    del percepts
+                else:
+                    features = self.feature_model.get_intermediate_layers_with_masked_feature(
+                        images, self.n_last_blocks,
+                    )
                 
-        del percepts
         torch.cuda.empty_cache()
         gc.collect()
 

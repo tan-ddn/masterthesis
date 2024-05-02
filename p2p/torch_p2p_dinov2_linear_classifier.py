@@ -172,10 +172,13 @@ def get_args_parser(
     parser.add_argument("--image_grayscale", action="store_true", help="Image in grayscale or rgb. Default is rgb.")
     parser.add_argument("--n_last_blocks", default=4, type=int, help="Maximun number of last blocks used for linear probing.")
     parser.add_argument("--run_on_cluster", action="store_true", help="Run on cluster or local machine. Default: local machine.")
+    parser.add_argument("--subset_dataset", action="store_true", help="Select a small subset of Imagenet.")
     parser.add_argument("--torch_p2p", action="store_true", help="P2p (torch version) between dataset and dinov2.")
     parser.add_argument('--axlambda', default=100, type=int, help='P2p parameter axlambda.')
     parser.add_argument("--rho", default=150, type=int, help="P2p parameter rho.")
     parser.add_argument("--chunk_length", default=32, type=int, help="Chunk length for torch_p2p.")
+    parser.add_argument("--xyrange", default=5, type=int, help="xyrange of AxonMap model.")
+    parser.add_argument("--xystep", default=0.75, type=float, help="xystep of AxonMap model.")
     parser.add_argument("--norm", default="norm", type=str,
         help='Normalization method for images: "norm", "no_norm". Default: "norm"')
     parser.set_defaults(
@@ -202,10 +205,13 @@ def get_args_parser(
         image_grayscale=False,
         n_last_blocks=4,
         run_on_cluster=False,
+        subset_dataset=False,
         torch_p2p=False,
         axlambda=100,
         rho=150,
         chunk_length=32,
+        xyrange=5,
+        xystep=0.75,
         norm='norm',
     )
     return parser
@@ -423,7 +429,7 @@ class ImageNetWds(wds.WebDataset):
 
     def __len__(self):
         if self.split == 'train':
-            return 1281167
+            return int(1281167 * 0.0687)
         else:
             return 50000
 
@@ -447,7 +453,7 @@ def make_eval_data_loader(test_dataset_str, args, num_workers, metric_type):
                 test_data_path,
             )
             .set_split('val')
-            .shuffle(5000)
+            # .shuffle(5000)
             .decode("pil")
             .to_tuple("jpg", "cls")
         )
@@ -470,10 +476,16 @@ def make_eval_data_loader(test_dataset_str, args, num_workers, metric_type):
             collate_fn=_pad_and_collate if metric_type == MetricType.IMAGENET_REAL_ACCURACY else None,
         )
     else:
-        test_dataset = make_dataset(
-            dataset_str=test_dataset_str,
-            transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
-        )
+        if test_dataset_str == 'Imagenette':
+            test_dataset = torchvision.datasets.ImageFolder(
+                root=r"/work/scratch/tnguyen/images/imagenette2/val",
+                transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
+            )
+        else:
+            test_dataset = make_dataset(
+                dataset_str=test_dataset_str,
+                transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
+            )
         test_data_loader = make_data_loader(
             dataset=test_dataset,
             batch_size=args.batch_size,
@@ -631,17 +643,25 @@ def run_eval_linear(
 
     train_transform = make_classification_train_transform(crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
     if train_dataset_str == 'ImageNetWds':
+        training_num_classes = 1000
         train_data_dir = r'/images/innoretvision/eye/imagenet_patch/train/'
         train_data_num = r'020'
         if args.run_on_cluster:
+            # train_data_num = r'010' if args.subset_dataset else r'146'
+            # """000000..000010 | total image: ~90k images
+            # [101, 101, 94, 86, 106, 118, 105, 85, 101, 90, 104, 88, 105, 92, 88, 90, 85, 103, 102, 100, 102, 105, 106, 93, 107, 101, 101, 95, 93, 110, 91, 98, 80, 79, 98, 94, 90, 88, 85, 93, 99, 95, 96, 95, 97, 91, 86, 101, 92, 99, 105, 93, 85, 103, 117, 98, 90, 90, 87, 101, 88, 109, 85, 87, 93, 86, 103, 85, 91, 99, 81, 74, 105, 100, 81, 85, 120, 93, 92, 88, 81, 91, 104, 109, 106, 106, 90, 78, 103, 78, 94, 95, 96, 100, 116, 85, 91, 93, 77, 90, 120, 105, 97, 98, 98, 97, 93, 98, 108, 110, 98, 94, 80, 117, 80, 84, 92, 76, 90, 119, 97, 112, 76, 100, 85, 87, 96, 91, 89, 101, 104, 88, 97, 78, 82, 106, 118, 87, 93, 94, 103, 74, 101, 95, 92, 111, 96, 84, 106, 92, 98, 96, 65, 92, 89, 95, 94, 96, 63, 99, 99, 82, 90, 103, 79, 68, 75, 52, 112, 110, 81, 92, 94, 94, 99, 65, 98, 100, 99, 95, 92, 92, 86, 83, 102, 77, 95, 86, 65, 89, 55, 77, 83, 89, 89, 101, 101, 107, 94, 93, 92, 94, 102, 98, 109, 98, 93, 92, 91, 110, 93, 119, 96, 116, 92, 106, 98, 84, 91, 111, 100, 73, 82, 126, 90, 92, 108, 96, 74, 88, 107, 94, 109, 91, 75, 111, 106, 106, 110, 89, 99, 103, 104, 101, 96, 80, 97, 62, 99, 98, 98, 87, 77, 86, 105, 106, 99, 106, 111, 109, 94, 103, 62, 100, 120, 87, 104, 91, 55, 84, 96, 96, 101, 107, 97, 91, 84, 105, 89, 102, 102, 94, 98, 104, 117, 101, 86, 106, 92, 96, 88, 113, 97, 100, 98, 112, 116, 107, 89, 100, 70, 97, 96, 101, 89, 92, 88, 100, 83, 101, 76, 111, 90, 83, 91, 89, 91, 89, 95, 104, 103, 108, 101, 96, 99, 101, 100, 100, 109, 99, 98, 96, 96, 103, 107, 75, 96, 92, 95, 107, 94, 106, 96, 100, 99, 100, 86, 104, 96, 97, 91, 95, 96, 81, 82, 84, 101, 101, 95, 103, 91, 111, 107, 92, 94, 87, 121, 88, 84, 88, 102, 99, 85, 113, 90, 90, 103, 70, 101, 83, 85, 105, 82, 80, 92, 117, 91, 81, 101, 112, 92, 101, 60, 105, 93, 104, 110, 107, 91, 119, 85, 99, 105, 90, 106, 110, 94, 108, 91, 88, 124, 90, 85, 108, 102, 85, 96, 90, 94, 93, 85, 111, 90, 86, 99, 84, 77, 101, 106, 93, 96, 93, 84, 89, 109, 95, 87, 101, 105, 92, 102, 97, 99, 104, 101, 96, 101, 117, 106, 102, 97, 104, 104, 96, 114, 96, 96, 103, 93, 86, 110, 78, 99, 102, 89, 86, 85, 104, 107, 99, 110, 101, 103, 88, 90, 88, 112, 95, 93, 82, 94, 106, 104, 102, 103, 93, 95, 109, 102, 96, 107, 78, 103, 87, 111, 112, 104, 100, 90, 80, 100, 81, 107, 79, 102, 91, 100, 116, 111, 95, 92, 101, 103, 92, 107, 81, 90, 93, 99, 92, 100, 74, 96, 100, 89, 99, 93, 113, 103, 106, 94, 46, 105, 96, 115, 89, 84, 87, 105, 87, 78, 84, 102, 81, 106, 98, 117, 108, 96, 90, 83, 84, 92, 107, 89, 83, 91, 95, 113, 92, 112, 95, 101, 100, 98, 81, 88, 80, 104, 86, 111, 90, 93, 85, 100, 88, 108, 94, 77, 79, 79, 81, 87, 94, 109, 90, 102, 82, 95, 90, 87, 87, 88, 94, 108, 103, 72, 96, 113, 93, 98, 88, 106, 84, 90, 95, 107, 93, 97, 108, 91, 102, 106, 111, 95, 100, 89, 98, 104, 97, 109, 109, 98, 58, 105, 93, 116, 95, 97, 96, 84, 102, 100, 87, 82, 71, 108, 94, 83, 107, 106, 111, 97, 103, 114, 84, 113, 93, 114, 107, 106, 91, 93, 87, 88, 101, 111, 94, 97, 112, 108, 97, 86, 97, 104, 105, 98, 95, 118, 102, 99, 85, 96, 104, 90, 76, 77, 90, 89, 107, 92, 88, 111, 102, 103, 108, 92, 97, 92, 71, 99, 103, 100, 92, 102, 89, 87, 92, 91, 99, 100, 98, 98, 93, 102, 101, 88, 87, 88, 91, 92, 95, 87, 91, 96, 99, 109, 88, 86, 85, 77, 109, 99, 89, 88, 110, 94, 106, 74, 83, 93, 114, 104, 109, 93, 107, 89, 104, 109, 91, 48, 103, 103, 93, 113, 82, 102, 83, 109, 77, 108, 98, 91, 85, 93, 105, 94, 106, 100, 96, 105, 95, 114, 99, 109, 118, 94, 85, 105, 92, 79, 91, 85, 106, 90, 102, 94, 89, 90, 86, 106, 99, 95, 98, 101, 101, 108, 106, 115, 112, 98, 99, 105, 89, 104, 109, 106, 109, 81, 86, 100, 103, 85, 93, 106, 86, 90, 87, 104, 80, 101, 98, 95, 112, 93, 86, 112, 83, 92, 106, 87, 82, 102, 116, 88, 99, 65, 100, 94, 86, 88, 118, 100, 95, 99, 95, 116, 98, 86, 109, 104, 74, 82, 95, 99, 108, 119, 106, 93, 87, 93, 86, 103, 94, 98, 103, 95, 78, 87, 78, 99, 76, 88, 96, 101, 105, 92, 97, 94, 80, 96, 90, 92, 76, 79, 80, 84, 87, 100, 100, 103, 96, 82, 83, 80, 72, 98, 97, 89, 114, 112, 80, 103, 86, 96, 103, 98, 106, 80, 105, 94, 78, 108, 106, 94, 96, 82, 112, 92, 112, 93, 91, 99, 91, 84, 96, 102, 104, 99, 89, 76, 93, 93, 105, 114, 111, 87, 100, 103, 91, 100, 94, 97, 97, 91, 103, 93, 109, 97, 101, 90, 88, 87, 106, 91, 95, 95, 105, 98, 103, 93, 104, 95, 94, 87, 100, 100, 84, 105, 113, 100, 83, 92, 101, 106, 101, 99, 96, 106, 76, 95, 118, 108, 91, 95, 107, 79, 100, 111, 94, 73, 111, 95, 91, 93, 96, 98, 94, 102, 118, 87, 102, 106, 88, 98, 98, 80, 95, 89, 82]
+            # """
             train_data_num = r'146'
+        if args.subset_dataset:
+            train_data_dir = r'/images/innoretvision/eye/imagenet_patch/sub100_train/' # 100_000 in total
+            train_data_num = r'011'
         train_data_path = train_data_dir + 'imagenet-train-{000000..000' + train_data_num + '}.tar'
         pil_dataset = (
             ImageNetWds(
             # wids.ShardListDataset(
                 train_data_path,
             )
-            .shuffle(5000)
+            # .shuffle(5000)
             .decode("pil")
             .to_tuple("jpg", "cls")
         )
@@ -652,14 +672,20 @@ def run_eval_linear(
             return train_transform(image), label
 
         train_dataset = pil_dataset.map(preprocess)
-        training_num_classes = 1000
         sampler_type = None
     else:
-        train_dataset = make_dataset(
-            dataset_str=train_dataset_str,
-            transform=train_transform,
-        )
-        training_num_classes = len(torch.unique(torch.Tensor(train_dataset.get_targets().astype(int))))
+        if train_dataset_str == 'Imagenette':
+            train_dataset = torchvision.datasets.ImageFolder(
+                root=r"/work/scratch/tnguyen/images/imagenette2/train",
+                transform=train_transform,
+            )
+            training_num_classes = 10
+        else:
+            train_dataset = make_dataset(
+                dataset_str=train_dataset_str,
+                transform=train_transform,
+            )
+            training_num_classes = len(torch.unique(torch.Tensor(train_dataset.get_targets().astype(int))))
         sampler_type = SamplerType.SHARDED_INFINITE
         # sampler_type = SamplerType.INFINITE
 
