@@ -47,7 +47,7 @@ from dinov2_lib.dinov2.eval.setup import get_autocast_dtype
 import dinov2_lib.dinov2.utils.utils as dinov2_utils
 from dinov2_lib.dinov2.utils.config import setup
 import dinov2_lib.dinov2.distributed as distributed
-from dinov2_lib.dinov2.eval.linear import has_ddp_wrapper, remove_ddp_wrapper, LinearPostprocessor, _pad_and_collate, AllClassifiers, scale_lr, setup_linear_classifiers
+from dinov2_lib.dinov2.eval.linear import has_ddp_wrapper, remove_ddp_wrapper, LinearPostprocessor, _pad_and_collate, AllClassifiers, create_linear_input, LinearClassifier
 from dinov2_lib.dinov2.data import SamplerType, make_data_loader, make_dataset
 # from dinov2_lib.dinov2.data.transforms import make_classification_eval_transform, make_classification_train_transform
 from dinov2_lib.dinov2.eval.utils import ModelWithIntermediateLayers
@@ -192,6 +192,7 @@ def get_args_parser(
         save_checkpoint_frequency=1,
         eval_period_iterations=2501,
         learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 0.1],
+        # learning_rates=[5e-3, 1e-2, 5e-2, 1e-1, 5e-1],
         val_metric_type=MetricType.MEAN_ACCURACY,
         test_metric_types=None,
         classifier_fpath=None,
@@ -257,26 +258,29 @@ class ModelLastSelfAttentionFixation(nn.Module):
 #         return self.linear(x_tokens_list)
 
 
-# def setup_linear_classifiers(sample_output, learning_rates, batch_size, num_classes=1000):
-#     linear_classifiers_dict = nn.ModuleDict()
-#     optim_param_groups = []
-#     for _lr in learning_rates:
-#         lr = scale_lr(_lr, batch_size)
-#         out_dim = sample_output.shape[1]
-#         linear_classifier = LinearClassifier(
-#             out_dim, num_classes=num_classes
-#         )
-#         linear_classifier = linear_classifier.cuda()
-#         linear_classifiers_dict[
-#             f"classifier_lr_{lr:.5f}".replace(".", "_")
-#         ] = linear_classifier
-#         optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
+def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, batch_size, num_classes=1000):
+    linear_classifiers_dict = nn.ModuleDict()
+    optim_param_groups = []
+    for n in n_last_blocks_list:
+        for avgpool in [False, True]:
+            for _lr in learning_rates:
+                # lr = scale_lr(_lr, batch_size)
+                lr = _lr
+                out_dim = create_linear_input(sample_output, use_n_blocks=n, use_avgpool=avgpool).shape[1]
+                linear_classifier = LinearClassifier(
+                    out_dim, use_n_blocks=n, use_avgpool=avgpool, num_classes=num_classes
+                )
+                linear_classifier = linear_classifier.cuda()
+                linear_classifiers_dict[
+                    f"classifier_{n}_blocks_avgpool_{avgpool}_lr_{lr:.5f}".replace(".", "_")
+                ] = linear_classifier
+                optim_param_groups.append({"params": linear_classifier.parameters(), "lr": lr})
 
-#     linear_classifiers = AllClassifiers(linear_classifiers_dict)
-#     if distributed.is_enabled():
-#         linear_classifiers = nn.parallel.DistributedDataParallel(linear_classifiers)
+    linear_classifiers = AllClassifiers(linear_classifiers_dict)
+    if distributed.is_enabled():
+        linear_classifiers = nn.parallel.DistributedDataParallel(linear_classifiers)
 
-#     return linear_classifiers, optim_param_groups
+    return linear_classifiers, optim_param_groups
 
 
 @torch.no_grad()
@@ -382,6 +386,8 @@ def evaluate_linear_classifiers(
             for k, v in results_dict.items():
                 f.write(json.dumps({k: v}) + "\n")
             f.write("\n")
+
+    del results_dict_temp
 
     return results_dict
 

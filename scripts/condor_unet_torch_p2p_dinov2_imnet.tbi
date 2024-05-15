@@ -1,0 +1,142 @@
+######################################################################
+# Readme
+######################################################################
+# Execute this job:
+#   - connect to `nic` via ssh: `ssh username@nic` (enter passwd)
+#   - start job: `condor_submit /path/to/this/file.tbi`
+# 
+# Monitor jobs:
+#   - see machines: `condor_status`
+#   - see queue: `condor_q`
+#   - keep monitoring queue: `watch condor_q` (quit with ctrl + c)
+# 
+# Find out more at:
+# http://www.iac.es/sieinvens/siepedia/pmwiki.php?n=HOWTOs.CondorHowTo
+######################################################################
+
+
+######################################################################
+# Necessary parameters
+######################################################################
+
+# Shell script that you want to execute
+cmd = /home/students/tnguyen/masterthesis/scripts/train_unet_torch_p2p_dinov2_imnet.sh
+
+# command line arguments
+# args = --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/5 --fixation_top 0.5 --fixation_grayscale
+# args = --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 448 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/4 --fixation_top 0.05 --fixation_grayscale
+
+# start directory
+initialdir = /home/students/tnguyen/masterthesis
+
+# define output, error and log file
+output = /work/scratch/tnguyen/unet/encoder/loc_$(cluster).$(Process)_out.log
+error = /work/scratch/tnguyen/unet/encoder/loc_$(cluster).$(Process)_err.log
+log = /work/scratch/tnguyen/unet/encoder/loc_$(cluster).$(Process)_log.log
+
+# working environments
+getenv        = True
+environment   = "working_dir=/work/scratch/tnguyen data_dir=/images/innoretvision/eye/imagenet_patch"
+
+
+######################################################################
+# Optional parameters
+######################################################################
+
+# If your job quits with an exit codes other then 0 (that means an error occured) it will be held. Without this it will be cancelled.
+
+on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
+
+
+## A nice job will note change your priority. You can use this statement when you have enough time to wait for your results
+
+nice_user = False
+
+# Choose if job should run on cluster or workstation node. If unset job will run on eachy available node. Options are "cluster" or "workstation"
+# requirements = POOL =="workstation"
+#
+# request a certain machine
+# requirements = TARGET.Machine=="abacus.lfb.rwth-aachen.de"
+#
+# required GPU RAM (MB)
+
+# requirements = (GPURAM > 4000) && (GPURAM < 48000)  # if you don't need much vram, please reduce requirements to skip 48GB cards if queue is full with bigger jobs.
+
+# use only a gpu that supports half precision
+# requirements = (HALF_PREC == 1)
+
+# only use machines where docker is able to run (has been checked before starting condor daemon)
+# requirements = TARGET.has_docker
+
+# You can filter CPU Flags (e.g. AVX2) to get only nodes who are able to run your code. (to check all available codec use "condor_status abacus -autoformat:th Name CPUFLAGS |grep -v slot1_ ")
+# requirements = TARGET.has_avx2
+
+
+#
+# Attention: You can only set one requirement line. Add more requirements by using && e.g.
+#
+# requirements = (GPURAM > 4000) && (GPURAM < 20000) && POOL =="workstation"
+# requirements = (GPURAM > 4000) && (GPURAM < 20000) && TARGET.Machine=="abacus.lfb.rwth-aachen.de"
+# Hint: Use (GPURAM > 5800) to match all GTX 1660 Super and GTX 1060
+# Example: (Use Workstation Pool, videocards with more then 5.8 GB but less then 16 GB VRAM and exclude all RTX 3090)
+# requirements = (GPURAM > 5800) && (GPURAM < 16000) && POOL =="workstation" && ( CUDADeviceName != "GeForce RTX 3090" ) 
+# requirements = (GPURAM > 10000) && TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
+# requirements = TARGET.Machine!="abatux.lfb.rwth-aachen.de" && TARGET.Machine!="gauss.lfb.rwth-aachen.de" && TARGET.Machine!="pc81.lfb.rwth-aachen.de"
+# requirements = (GPURAM > 20000)
+requirements = (GPURAM > 40000)
+# requirements = (GPURAM < 15000)
+
+
+# required number of CPU cores
+request_cpus = 1 
+
+# required number of GPUs
+request_gpus = 1
+
+# required CPU RAM
+request_memory = 30 GB
+
+# required Disk space
+
+request_disk = 16 GB
+
+# criterion after which to choose the machine
+# e.g. `rank = memory` takes machine with largest RAM
+rank = memory
+
+# number of seconds to wait before executing job 
+# deferral_time = (CurrentTime + 1)
+
+
+
+######################################################################
+# Further preferences
+######################################################################
+
+# sync logfile to logfiles instead of copying them after finishing
+stream_error = true
+stream_output = true
+should_transfer_files = IF_NEEDED
+
+# run with user's account
+run_as_owner = True
+load_profile = True
+
+
+
+# number of executions of this job
+# queue 1 
+
+# if you want to use a range of arguments, 
+# you can add them like this, one set of argumetns per line
+queue 1 arguments from (
+# Imagenette train 9,469 - val 3,925 | subset v1 train 95593 - val 50000
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/1 --fixation_top 0.1 --batch-size 128 --epoch-length 781 --eval-period-iterations 781 --torch_p2p --chunk_length 16 --rho 150 --axlambda 100 --xyrange 15 --xystep 1 --subset_dataset
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/2 --fixation_top 0.1 --batch-size 64 --epoch-length 1562 --eval-period-iterations 1562 --torch_p2p --chunk_length 16 --rho 437 --axlambda 1420 --xyrange 15 --xystep 1 --subset_dataset
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/72 --fixation_top 0.1 --batch-size 1024 --epoch-length 97 --eval-period-iterations 97 --subset_dataset
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/73 --fixation_top 0.1 --batch-size 1024 --epoch-length 97 --eval-period-iterations 97 --subset_dataset --image_grayscale
+--run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/3 --fixation_top 0.1 --batch-size 128 --epoch-length 781 --eval-period-iterations 781 --torch_p2p --chunk_length 96 --rho 150 --axlambda 100 --xyrange 15 --xystep 1 --subset_dataset
+--run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/4 --fixation_top 0.1 --batch-size 128 --epoch-length 781 --eval-period-iterations 781 --torch_p2p --chunk_length 64 --rho 437 --axlambda 1420 --xyrange 15 --xystep 1 --subset_dataset
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/5 --fixation_top 0.1 --batch-size 64 --epoch-length 147 --eval-period-iterations 147 --torch_p2p --chunk_length 24 --rho 150 --axlambda 100 --xyrange 15 --xystep 1 --train-dataset Imagenette --val-dataset Imagenette
+# --run_on_cluster --patch_size 14 --pretrained-weights /home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth --image_size 224 --config-file /home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml --output-dir /work/scratch/tnguyen/unet/encoder/6 --fixation_top 0.1 --batch-size 16 --epoch-length 591 --eval-period-iterations 591 --torch_p2p --chunk_length 8 --rho 437 --axlambda 1420 --xyrange 15 --xystep 1 --train-dataset Imagenette --val-dataset Imagenette
+)
