@@ -182,6 +182,7 @@ def get_args_parser(
         epoch_length=2501,
         save_checkpoint_frequency=1,
         eval_period_iterations=2501,
+        # learning_rates=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 2e-2],
         learning_rates=[5e-3, 1e-2, 5e-2, 1e-1, 5e-1],
         val_metric_type=MetricType.MEAN_ACCURACY,
         test_metric_types=None,
