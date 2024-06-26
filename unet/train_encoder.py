@@ -172,6 +172,13 @@ def get_args_parser(
         help='Normalization method for images: "norm", "no_norm". Default: "norm"')
     parser.add_argument('--unet_classes', type=int, default=1, help='Number of classes for unet')
     parser.add_argument('--unet_bilinear', action='store_true', default=False, help='Use bilinear upsampling')
+    parser.add_argument("--encoder", default="unet", type=str,
+        help='Encoder type: "unet", "unet2", "linear", or "none". Default: "unet"')
+    parser.add_argument('--load_identity_unet', action='store_true', default=False, help='Load saved identity unet')
+    parser.add_argument('--down_sampling', action='store_true', default=False, help='Down sample image instead of patchify prior to p2p')
+    parser.add_argument("--grad_mode", default="inference", type=str,
+        help='Gradient Descent mode: "inference", "no_grad", "none". Default: "inference"')
+    parser.add_argument('--no_eval', action='store_true', default=False, help='Use model.eval()')
     parser.set_defaults(
         train_dataset_str="ImageNetWds",
         val_dataset_str="ImageNetWds",
@@ -207,6 +214,11 @@ def get_args_parser(
         norm='norm',
         unet_classes=1,
         unet_bilinear=False,
+        encoder='unet',
+        load_identity_unet=False,
+        down_sampling=False,
+        grad_mode='inference',
+        no_eval=False,
     )
     return parser
 
@@ -215,7 +227,8 @@ class ModelLastSelfAttentionFixation(nn.Module):
     def __init__(self, feature_model, args, n_last_blocks, autocast_ctx):
         super().__init__()
         self.feature_model = feature_model
-        self.feature_model.eval()
+        if not args.no_eval:
+            self.feature_model.eval()
         self.fixation_layer = Fixation(
             device=args.device,
             img_size=args.image_size,
@@ -299,6 +312,7 @@ def evaluate(
 
     fixations = None
     for samples, targets, *_ in metric_logger.log_every(data_loader, 10, header):
+        no_encoder_samples = copy.deepcopy(samples)
         outputs = model(samples.to(device))
 
         # outputs, fixations = model(samples.to(device))
@@ -318,21 +332,23 @@ def evaluate(
             metric.update(**metric_inputs)
 
         to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=1)
-        outputs = model.torch_p2p_dinov2(to_grayscale_for_p2p(samples.to(device)))
+        no_encoder_outputs = model.torch_p2p_dinov2(to_grayscale_for_p2p(no_encoder_samples.to(device)))
         if criterion is not None:
-            no_encoder_loss = criterion(outputs, targets)
+            no_encoder_loss = criterion(no_encoder_outputs, targets)
             print(f'No encoder case: loss value - {no_encoder_loss.item()}')
 
         no_encoder_metrics = copy.deepcopy(metrics)
         for k, metric in no_encoder_metrics.items():
-            no_encoder_metric_inputs = postprocessors[k](outputs, targets)
+            no_encoder_metric_inputs = postprocessors[k](no_encoder_outputs, targets)
             metric.update(**no_encoder_metric_inputs)
 
     # clear memory
-    del fixations, outputs
+    del fixations, outputs, no_encoder_outputs
 
     metric_logger.synchronize_between_processes()
     logger.info(f"Averaged stats: {metric_logger}")
+
+    model.train(True)
 
     stats = {k: metric.compute() for k, metric in metrics.items()}
     metric_logger_stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
@@ -467,8 +483,12 @@ class ImageNetWds(wds.WebDataset):
 
 def make_eval_data_loader(test_dataset_str, args, num_workers, metric_type):
     resize_size = int(args.image_size * 1.15)
+    crop_size = args.image_size
+    if args.down_sampling:  # if down_sampling then interplolate image to patch size directly
+        resize_size = int(args.patch_size * 1.15)
+        crop_size = args.patch_size
     if test_dataset_str == 'ImageNetWds':
-        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
+        test_transform = make_classification_eval_transform(resize_size=resize_size, crop_size=crop_size, grayscale=args.image_grayscale, norm=args.norm)
         test_data_dir = r'/images/innoretvision/eye/imagenet_patch/val/'
         test_data_num = r'002'
         if args.run_on_cluster:
@@ -506,12 +526,12 @@ def make_eval_data_loader(test_dataset_str, args, num_workers, metric_type):
         if test_dataset_str == 'Imagenette':
             test_dataset = torchvision.datasets.ImageFolder(
                 root=r"/work/scratch/tnguyen/images/imagenette2/val",
-                transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
+                transform=make_classification_eval_transform(resize_size=resize_size, crop_size=crop_size, grayscale=args.image_grayscale, norm=args.norm),
             )
         else:
             test_dataset = make_dataset(
                 dataset_str=test_dataset_str,
-                transform=make_classification_eval_transform(resize_size=resize_size, crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm),
+                transform=make_classification_eval_transform(resize_size=resize_size, crop_size=crop_size, grayscale=args.image_grayscale, norm=args.norm),
             )
         test_data_loader = make_data_loader(
             dataset=test_dataset,
@@ -592,11 +612,16 @@ def eval_linear(
             torch.cuda.synchronize()
             metric_logger.update(loss=loss.item())
             metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-            print("lr", optimizer.param_groups[0]["lr"])
+            logging.info("lr", optimizer.param_groups[0]["lr"])
             # clear memory
             del fixations, features, outputs
             ram_usage = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
-            print(f"ram usage: {ram_usage}")
+            logging.info(f"ram usage: {ram_usage}")
+
+            for name, param in feature_model.encoder.linear.named_parameters():
+                print(f"{name}: {param.requires_grad}, {param.grad}")
+                if param.grad:
+                    print(f"grad {param.grad.data}")
 
         if iteration - start_iter > 5:
             if iteration % running_checkpoint_period == 0:
@@ -669,7 +694,10 @@ def run_eval_linear(
         assert len(test_metric_types) == len(test_dataset_strs)
     assert len(test_dataset_strs) == len(test_class_mapping_fpaths)
 
-    train_transform = make_classification_train_transform(crop_size=args.image_size, grayscale=args.image_grayscale, norm=args.norm)
+    crop_size = args.image_size
+    if args.down_sampling:  # if down_sampling then interplolate image to patch size directly
+        crop_size = args.patch_size
+    train_transform = make_classification_train_transform(crop_size=crop_size, grayscale=args.image_grayscale, norm=args.norm)
     if train_dataset_str == 'ImageNetWds':
         training_num_classes = 1000
         train_data_dir = r'/images/innoretvision/eye/imagenet_patch/train/'
@@ -733,12 +761,26 @@ def run_eval_linear(
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    encoder_model = EncoderModel(patch_size=args.patch_size, n_channels=1, n_classes=args.unet_classes, bilinear=args.unet_bilinear)
+    encoder_model = EncoderModel(patch_size=args.patch_size, n_channels=1, n_classes=args.unet_classes, bilinear=args.unet_bilinear, 
+                                 encoder=args.encoder, down_sampling=args.down_sampling)
     encoder_model = encoder_model.to(device=args.device)
-    logging.info(f'Network:\n'
-                 f'\t{encoder_model.n_channels} input channels\n'
-                 f'\t{encoder_model.n_classes} output channels (classes)\n'
-                 f'\t{"Bilinear" if encoder_model.bilinear else "Transposed conv"} upscaling')
+    if args.encoder == 'unet':
+        logging.info(f'Encoder:\n'
+                    f'\t{encoder_model.unet.n_channels} input channels\n'
+                    f'\t{encoder_model.unet.n_classes} output channels (classes)\n'
+                    f'\t{"Bilinear" if encoder_model.unet.bilinear else "Transposed conv"} upscaling')
+    elif args.encoder == 'unet2':
+        logging.info(f'Encoder:\n'
+                    f'\t{encoder_model.unet2.n_channels} input channels\n'
+                    f'\t{encoder_model.unet2.n_classes} output channels (classes)')
+        if args.load_identity_unet:
+            """Load saved identity unet2"""
+            I_UNET2_PATH = r"/work/scratch/tnguyen/unet/identity_encoder/3/checkpoint_epoch10.pth"
+            encoder_model.unet2.load_state_dict(torch.load(I_UNET2_PATH))
+    elif args.encoder == 'linear':
+        logging.info(f'Encoder: linear')
+    else:
+        logging.info(f'Encoder: none')
 
     if args.fixation_top >= 1:
         feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
@@ -782,6 +824,7 @@ def run_eval_linear(
     checkpoint_model = nn.Sequential(feature_model.encoder, linear_classifiers)
 
     optimizer = torch.optim.SGD(optim_param_groups, momentum=0.9, weight_decay=0)
+    logging.info("optimizer", optimizer)
     max_iter = epochs * epoch_length
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, max_iter, eta_min=0)
     checkpointer = Checkpointer(checkpoint_model, output_dir, optimizer=optimizer, scheduler=scheduler)
@@ -874,7 +917,9 @@ def main(args):
 
     for p in model.parameters():
         p.requires_grad = False
-    model.eval()
+    print(f"grad mode: {args.grad_mode}. Use model.eval(): {args.no_eval}")
+    if not args.no_eval:
+        model.eval()
     model.to(device)
     if os.path.isfile(args.pretrained_weights):
         state_dict = torch.load(args.pretrained_weights, map_location="cpu")
@@ -965,7 +1010,7 @@ def build_model_from_cfg(cfg, only_teacher=False):
 def build_model_for_eval(config, pretrained_weights):
     model, _ = build_model_from_cfg(config, only_teacher=True)
     dinov2_utils.load_pretrained_weights(model, pretrained_weights, "teacher")
-    model.eval()
+    # model.eval()
     model.cuda()
     return model
 

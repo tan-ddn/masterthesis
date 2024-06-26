@@ -22,7 +22,7 @@ p2p_patch_size = 14
 rho = 150
 axlambda = 100
 range_limit = 15
-xystep = 0.5
+xystep = 1
 disk_electrode_radius = 100
 # spacing = 575
 spacing = 400
@@ -166,11 +166,11 @@ with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_m
 """Resize percept back to desired shape"""
 out = F.interpolate(percept, size=(img.shape[1], img.shape[2]))
 
-# print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
+print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
 print(f"Decoder 2 time elapsed: {time.time() - before_decoder2}")
 
 # print(f"Time elapsed: {end - start}")  # pytorch profiler
 
-saving_file_path = f'/home/students/tnguyen/masterthesis/plots/{rho}_{axlambda}/train/n03026506/AxonMap_torch_test_resized_{xystep}.jpg'
-print(saving_file_path)
-cv2.imwrite(saving_file_path, np.tile(out.permute(0, 2, 3, 1).cpu().detach().numpy(), (1, 1, 1, 3)).squeeze())
+# saving_file_path = f'/home/students/tnguyen/masterthesis/plots/{rho}_{axlambda}/train/n03026506/AxonMap_torch_test_resized_{xystep}.jpg'
+# print(saving_file_path)
+# cv2.imwrite(saving_file_path, np.tile(out.permute(0, 2, 3, 1).cpu().detach().numpy(), (1, 1, 1, 3)).squeeze())
