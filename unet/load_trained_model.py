@@ -17,27 +17,43 @@ from dinov2_lib.dinov2.eval.metrics import MetricType, build_metric
 from dinov2_lib.dinov2.eval.linear import _pad_and_collate
 from dinov2_lib.dinov2.data import SamplerType, make_data_loader, make_dataset
 from dinov2_tan.data_transforms import make_classification_eval_transform, make_classification_train_transform
-from unet.encoder import ModelWithMaskedLastFeature, EncoderModel, Pipeline
+from unet.encoder import ModelWithMaskedLastFeature, EncoderModel, Pipeline, down_sampled_image2percept
 from unet.train_encoder import get_args_parser, setup_and_build_model, setup_linear_classifiers, ImageNetWds
 from p2p.torch_p2p_dinov2_masked_model import image2percept
 
 
 PATH = r"/work/scratch/tnguyen/unet/encoder/16/model_final.pth"
-UNET2_A_PATH = r"/work/scratch/tnguyen/unet/encoder/23/model_0002939.pth"
+# UNET2_A_PATH = r"/work/scratch/tnguyen/unet/encoder/23/model_0002939.pth"
 # UNET2_A_PATH = r"/work/scratch/tnguyen/unet/encoder/23/running_checkpoint_linear_eval.pth"
 # UNET2_A_PATH = r"/work/scratch/tnguyen/unet/encoder/23/model_0000881.pth"
+UNET2_A_PATH = r"/work/scratch/tnguyen/unet/encoder/49b/model_0004424.pth"
+
 LINEAR_END_A_PATH = r"/work/scratch/tnguyen/unet/encoder/17/model_0002939.pth"
 LINEAR_BEGIN_A_PATH = r"/work/scratch/tnguyen/unet/encoder/17/model_0000587.pth"
 
 UNET2_A_EPOCH1_PATH = r"/work/scratch/tnguyen/unet/encoder/39/model_0000146.pth"
+UNET2_A_EPOCH1_PATH = r"/work/scratch/tnguyen/unet/down_sampling/31/running_checkpoint_linear_eval.pth"
 
-# LINEAR_A_PATH_1 = r"/work/scratch/tnguyen/unet/encoder/42/model_0000294.pth"
-# LINEAR_A_PATH_2 = r"/work/scratch/tnguyen/unet/encoder/42/model_0001769.pth"
-# LINEAR_A_PATH_3 = r"/work/scratch/tnguyen/unet/encoder/42/running_checkpoint_linear_eval.pth"
+LINEAR_A_PATH_1 = r"/work/scratch/tnguyen/unet/encoder/42/model_0000590.pth"
+LINEAR_A_PATH_2 = r"/work/scratch/tnguyen/unet/encoder/42/model_0001181.pth"
+LINEAR_A_PATH_3 = r"/work/scratch/tnguyen/unet/encoder/42/running_checkpoint_linear_eval.pth"
 
-LINEAR_A_PATH_1 = r"/work/scratch/tnguyen/unet/encoder/41/model_0000072.pth"
-LINEAR_A_PATH_2 = r"/work/scratch/tnguyen/unet/encoder/41/model_0000656.pth"
-LINEAR_A_PATH_3 = r"/work/scratch/tnguyen/unet/encoder/41/running_checkpoint_linear_eval.pth"
+# LINEAR_A_PATH_1 = r"/work/scratch/tnguyen/unet/encoder/41/model_0000072.pth"
+# LINEAR_A_PATH_2 = r"/work/scratch/tnguyen/unet/encoder/41/model_0000656.pth"
+# LINEAR_A_PATH_3 = r"/work/scratch/tnguyen/unet/encoder/41/running_checkpoint_linear_eval.pth"
+
+# LINEAR_A_PATH_1 = r"/work/scratch/tnguyen/unet/encoder/44/model_0000294.pth"
+# LINEAR_A_PATH_2 = r"/work/scratch/tnguyen/unet/encoder/44/.pth"
+# LINEAR_A_PATH_3 = r"/work/scratch/tnguyen/unet/encoder/44/running_checkpoint_linear_eval.pth"
+
+CLASSIFIER_PATH = r"/work/scratch/tnguyen/dinov2/fixation/78/model_0000802.pth"
+
+UNET2_I_PATH = r"/work/scratch/tnguyen/unet/identity_encoder/3/checkpoint_epoch10.pth"
+UNET2_A_EPOCH20_PATH = r"/work/scratch/tnguyen/unet/down_sampling/37/model_0005899.pth"
+UNET2_B_EPOCH19_PATH = r"/work/scratch/tnguyen/unet/down_sampling/42/model_0005604.pth"
+UNET2_P_A_EPOCH19_PATH = r"/work/scratch/tnguyen/unet/encoder/49/model_0005604.pth"
+UNET2_P_B_EPOCH20_PATH = r"/work/scratch/tnguyen/unet/encoder/52/model_0005899.pth"
+
 
 def make_eval_data_loader(test_dataset_str, num_workers, metric_type):
     resize_size = int(224 * 1.15)
@@ -109,15 +125,24 @@ if __name__ == '__main__':
     args.config_file = r"/home/students/tnguyen/masterthesis/dinov2_lib/dinov2/configs/eval/vits14_pretrain.yaml"
     args.pretrained_weights = r"/home/students/tnguyen/masterthesis/dinov2_lib/dinov2_vits14_pretrain.pth"
     args.torch_p2p = True
-    args.learning_rates = [0.02]
+    # args.learning_rates = [0.02]
+    print(f"rho and lambda: {args.rho, args.axlambda}")
 
     # ckpt = torch.load(UNET2_A_PATH)
-    ckpt = torch.load(UNET2_A_EPOCH1_PATH)
+    # ckpt = torch.load(UNET2_A_EPOCH1_PATH)
     # ckpt = torch.load(LINEAR_BEGIN_A_PATH)
     # ckpt = torch.load(LINEAR_END_A_PATH)
     # ckpt = torch.load(LINEAR_A_PATH_1)
     # ckpt = torch.load(LINEAR_A_PATH_2)
     # ckpt = torch.load(LINEAR_A_PATH_3)
+    
+    # ckpt = torch.load(UNET2_I_PATH)
+    # ckpt = torch.load(UNET2_A_EPOCH20_PATH)
+    # ckpt = torch.load(UNET2_B_EPOCH19_PATH)
+    # ckpt = torch.load(UNET2_P_A_EPOCH19_PATH)
+    ckpt = torch.load(UNET2_P_B_EPOCH20_PATH)
+
+    # classifier_ckpt = torch.load(CLASSIFIER_PATH)
     
     # for key, value in ckpt.items():
         # if key not in ["optimizer", "scheduler", "iteration"]:
@@ -151,24 +176,46 @@ if __name__ == '__main__':
     checkpoint_model = nn.Sequential(feature_model.encoder, linear_classifiers)
     checkpoint_model.load_state_dict(ckpt['model'])
     checkpoint_model.eval()
-    # for p in checkpoint_model.parameters():
-    #     p.requires_grad = False
-    # encoder_model.load_state_dict(ckpt['model'].items()[0])
-    # encoder_model.eval()
-    for image, label in val_dataset:
-        break
-    # torchvision.utils.save_image(image, r"/home/students/tnguyen/masterthesis/unet/original_image.jpg")
-    # image = image.unsqueeze(0).cuda()
-    # output = checkpoint_model[0](image)
-    # # output = encoder_model(image)
-    # torchvision.utils.save_image(output[0], r"/home/students/tnguyen/masterthesis/unet/after_unet2_image.jpg")
     
-    # to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=1)
-    # percepts = image2percept(to_grayscale_for_p2p(image), 14, masked_torch_p2p_dinov2_model.decoder, 2)
-    # torchvision.utils.save_image(percepts[0], r"/home/students/tnguyen/masterthesis/unet/original_after_p2p_image.jpg")
-    # percepts = image2percept(output, 14, masked_torch_p2p_dinov2_model.decoder, 2)
-    # torchvision.utils.save_image(percepts[0], r"/home/students/tnguyen/masterthesis/unet/after_unet2_p2p_image.jpg")
+    # encoder_model.unet2.load_state_dict(ckpt)
+    # encoder_model.unet2.eval()
+    # for p in encoder_model.unet2.parameters():
+    #     p.requires_grad = False
 
+    to_grayscale = pth_transforms.Grayscale(num_output_channels=1)
+    transform = pth_transforms.Compose([
+        pth_transforms.Resize((14, 14)),
+        # pth_transforms.ToTensor(),
+        # pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    ])
+    image2percept_norm = pth_transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+
+    for i, (image, label) in enumerate(val_dataset):
+        if i > 5:
+            break
+        else:
+            print(f"Image shape, max, and min {image.shape, image.max(), image.min()}")
+    
+            image = to_grayscale(image.to(device))
+            # image = transform(image.to(device))  # For downsampling
+            image = image.unsqueeze(0).cuda()
+            output = checkpoint_model[0](image)  # For after trained unet2
+            # output = encoder_model.unet(image)  # For identity unet2
+            # torchvision.utils.save_image(output[0], r"/home/students/tnguyen/masterthesis/unet/downsampling/B/"+str(i)+r"_after_unet_image.jpg")
+            torchvision.utils.save_image(output[0], r"/home/students/tnguyen/masterthesis/unet/patchification/B/"+str(i)+r"_after_unet_image.jpg")
+            
+            # """Downsampling"""
+            # percepts = down_sampled_image2percept(image, 14, masked_torch_p2p_dinov2_model.decoder, 2)
+            # torchvision.utils.save_image(percepts[0], r"/home/students/tnguyen/masterthesis/unet/downsampling/B/"+str(i)+r"_after_p2p_image.jpg")
+            # percepts = down_sampled_image2percept(output, 14, masked_torch_p2p_dinov2_model.decoder, 2)
+            # torchvision.utils.save_image(percepts[0], r"/home/students/tnguyen/masterthesis/unet/downsampling/B/"+str(i)+r"_after_unet2_p2p_image.jpg")
+
+            """Patchification"""
+            percepts = image2percept(image, 14, masked_torch_p2p_dinov2_model.decoder, 2)
+            torchvision.utils.save_image(percepts[0], r"/home/students/tnguyen/masterthesis/unet/patchification/B/"+str(i)+r"_after_p2p_image.jpg")
+            percepts = image2percept(output, 14, masked_torch_p2p_dinov2_model.decoder, 2)
+            percepts = image2percept_norm(percepts)
+            torchvision.utils.save_image(percepts[0], r"/home/students/tnguyen/masterthesis/unet/patchification/B/"+str(i)+r"_after_unet2_p2p_image.jpg")
 
     """Draw histogram of the trained weights"""
     nbins = 19
@@ -181,33 +228,23 @@ if __name__ == '__main__':
     print(f"trained weights shape {trained_weights.shape}")
     print(f"max min mean std: {torch.max(trained_weights), torch.min(trained_weights), torch.mean(trained_weights), torch.std(trained_weights)}")
 
-    # trained_hist = numpy.histogram(trained_weights.cpu().detach().numpy(), bins=nbins, range=(-1., 1.), density=False)
-    # # print(trained_hist)
-    # hist_values, bin_edges = trained_hist[0].astype(numpy.int64), trained_hist[1]
-    # hist_values = hist_values / hist_values.sum()
-    # # print(hist_values)
-    # # print(hist_values.sum())
-    # x_range = (bin_edges[1:] + bin_edges[:-1]) / 2
-    # width = (x_range[1] - x_range[0]) * 0.8
-    # fig, ax = plt.subplots()
-    # ax.bar(x_range, hist_values, width=width, align='center')
-    # # ax.hist(hist_values, bins=bin_edges, align='mid', density=False)
-    # # ax.set_xlabel('Bin range')
-    # # ax.set_yscale('log')
-    # ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
-    # plt.savefig(r"/home/students/tnguyen/masterthesis/unet/after_trained_unet2_weights.png")
-    # plt.close()
-
-
-    # """Check weights of linear classifiers"""
-    # trained_weights = torch.tensor([], device=args.device)
-    # for name, param in checkpoint_model[1].named_parameters():
-    #     # print(name) #, param.data
-    #     param.requires_grad = False
-    #     param_1d = param.view(param.nelement())
-    #     trained_weights = torch.cat((trained_weights, param_1d))
-    # print(f"trained weights shape {trained_weights.shape}")
-    # print(f"max min mean std: {torch.max(trained_weights), torch.min(trained_weights), torch.mean(trained_weights), torch.std(trained_weights)}")
+    trained_hist = numpy.histogram(trained_weights.cpu().detach().numpy(), bins=nbins, range=(-1., 1.), density=False)
+    # print(trained_hist)
+    hist_values, bin_edges = trained_hist[0].astype(numpy.int64), trained_hist[1]
+    hist_values = hist_values / hist_values.sum()
+    # print(hist_values)
+    # print(hist_values.sum())
+    x_range = (bin_edges[1:] + bin_edges[:-1]) / 2
+    width = (x_range[1] - x_range[0]) * 0.8
+    fig, ax = plt.subplots()
+    ax.bar(x_range, hist_values, width=width, align='center')
+    # ax.hist(hist_values, bins=bin_edges, align='mid', density=False)
+    # ax.set_xlabel('Bin range')
+    # ax.set_yscale('log')
+    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
+    # plt.savefig(r"/home/students/tnguyen/masterthesis/unet/downsampling/B/after_trained_unet2_params.png")
+    plt.savefig(r"/home/students/tnguyen/masterthesis/unet/patchification/B/after_trained_unet2_params.png")
+    plt.close()
 
 
     # """Draw histogram of the linear weights"""
@@ -215,8 +252,9 @@ if __name__ == '__main__':
     # trained_weights = torch.tensor([], device=args.device)
     # for name, p in checkpoint_model[0].linear.named_parameters():
     #     print(name)
+    #     print(p.data)
     #     p.requires_grad = False
-    #     p_1d = p.view(p.nelement())
+    #     p_1d = p.data.view(p.data.nelement())
     #     trained_weights = torch.cat((trained_weights, p_1d))
     # print(f"trained weights shape {trained_weights.shape}")
     # print(f"max min mean std: {torch.max(trained_weights), torch.min(trained_weights), torch.mean(trained_weights), torch.std(trained_weights)}")
@@ -235,5 +273,29 @@ if __name__ == '__main__':
     # # ax.set_xlabel('Bin range')
     # # ax.set_yscale('log')
     # ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
-    # plt.savefig(r"/home/students/tnguyen/masterthesis/unet/after_trained_unet2_weights.png")
+    # plt.savefig(r"/home/students/tnguyen/masterthesis/unet/after_trained_linear_weights.png")
     # plt.close()
+
+
+    # """Check weights of linear classifiers"""
+    # saved_data = None
+    # for key, value in classifier_ckpt['model'].items():
+    #     print(key)
+    #     if key == "classifiers_dict.classifier_4_blocks_avgpool_True_lr_0_00010.linear.bias":
+    #         saved_data = value
+    # for name, param in linear_classifiers.module.named_parameters():
+    #     if name == "classifiers_dict.classifier_4_blocks_avgpool_True_lr_0_00010.linear.bias":
+    #         print(param.data)
+    #         param.data = saved_data
+    #         print(f"---")
+    #         print(param.data)
+    # linear_classifiers.module.load_state_dict(classifier_ckpt['model'])
+    # linear_classifiers.eval()
+    # trained_weights = torch.tensor([], device=args.device)
+    # for name, param in linear_classifiers.module.named_parameters():
+    #     print(name) #, param.data
+        # param.requires_grad = False
+        # param_1d = param.view(param.nelement())
+        # trained_weights = torch.cat((trained_weights, param_1d))
+    # print(f"trained weights shape {trained_weights.shape}")
+    # print(f"max min mean std: {torch.max(trained_weights), torch.min(trained_weights), torch.mean(trained_weights), torch.std(trained_weights)}")

@@ -174,11 +174,15 @@ def get_args_parser(
     parser.add_argument('--unet_bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument("--encoder", default="unet", type=str,
         help='Encoder type: "unet", "unet2", "linear", or "none". Default: "unet"')
+    parser.add_argument("--encoder_lr", default=0.001, type=float, help="Encoder learning rate.")
     parser.add_argument('--load_identity_unet', action='store_true', default=False, help='Load saved identity unet')
     parser.add_argument('--down_sampling', action='store_true', default=False, help='Down sample image instead of patchify prior to p2p')
     parser.add_argument("--grad_mode", default="inference", type=str,
         help='Gradient Descent mode: "inference", "no_grad", "none". Default: "inference"')
     parser.add_argument('--no_eval', action='store_true', default=False, help='Use model.eval()')
+    parser.add_argument('--pretrained_classifier', action='store_true', default=False, help='Use pretrained classifier')
+    parser.add_argument("--pretrained_classifier_path", default="", type=str, help='File to pretrained classifier to load')
+    parser.add_argument('--avgpool', action='store_true', default=False, help='Is there avgpool in the pretrained classifier')
     parser.set_defaults(
         train_dataset_str="ImageNetWds",
         val_dataset_str="ImageNetWds",
@@ -215,10 +219,12 @@ def get_args_parser(
         unet_classes=1,
         unet_bilinear=False,
         encoder='unet',
+        encoder_lr=1e-3,
         load_identity_unet=False,
         down_sampling=False,
         grad_mode='inference',
         no_eval=False,
+        pretrained_classifier=False,
     )
     return parser
 
@@ -264,11 +270,17 @@ class ModelLastSelfAttentionFixation(nn.Module):
 #         return self.linear(x_tokens_list)
 
 
-def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, batch_size, num_classes=1000):
+def setup_linear_classifiers(sample_output, n_last_blocks_list, learning_rates, batch_size, 
+                             num_classes=1000, optim_param_groups=None, pretrained_classifier=False, avgpool=False):
     linear_classifiers_dict = nn.ModuleDict()
-    optim_param_groups = []
+    if optim_param_groups is None:
+        optim_param_groups = []
+    if pretrained_classifier:
+        avgpool_option = [avgpool]
+    else:
+        avgpool_option = [False, True]
     for n in n_last_blocks_list:
-        for avgpool in [False, True]:
+        for avgpool in avgpool_option:
             for _lr in learning_rates:
                 # lr = scale_lr(_lr, batch_size)
                 lr = _lr
@@ -312,7 +324,7 @@ def evaluate(
 
     fixations = None
     for samples, targets, *_ in metric_logger.log_every(data_loader, 10, header):
-        no_encoder_samples = copy.deepcopy(samples)
+        # no_encoder_samples = copy.deepcopy(samples)
         outputs = model(samples.to(device))
 
         # outputs, fixations = model(samples.to(device))
@@ -331,19 +343,20 @@ def evaluate(
             # metric_inputs = postprocessors[k](fixations, targets)
             metric.update(**metric_inputs)
 
-        to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=1)
-        no_encoder_outputs = model.torch_p2p_dinov2(to_grayscale_for_p2p(no_encoder_samples.to(device)))
-        if criterion is not None:
-            no_encoder_loss = criterion(no_encoder_outputs, targets)
-            print(f'No encoder case: loss value - {no_encoder_loss.item()}')
+        # if args.encoder != 'none':
+        #     to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=1)
+        #     no_encoder_outputs = model.torch_p2p_dinov2(to_grayscale_for_p2p(no_encoder_samples.to(device)))
+        #     if criterion is not None:
+        #         no_encoder_loss = criterion(no_encoder_outputs, targets)
+        #         print(f'No encoder case: loss value - {no_encoder_loss.item()}')
 
-        no_encoder_metrics = copy.deepcopy(metrics)
-        for k, metric in no_encoder_metrics.items():
-            no_encoder_metric_inputs = postprocessors[k](no_encoder_outputs, targets)
-            metric.update(**no_encoder_metric_inputs)
+        #     no_encoder_metrics = copy.deepcopy(metrics)
+        #     for k, metric in no_encoder_metrics.items():
+        #         no_encoder_metric_inputs = postprocessors[k](no_encoder_outputs, targets)
+        #         metric.update(**no_encoder_metric_inputs)
 
     # clear memory
-    del fixations, outputs, no_encoder_outputs
+    # del fixations, outputs, no_encoder_outputs
 
     metric_logger.synchronize_between_processes()
     logger.info(f"Averaged stats: {metric_logger}")
@@ -354,7 +367,10 @@ def evaluate(
     metric_logger_stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
     # return metric_logger_stats, stats
 
-    no_encoder_stats = {k: metric.compute() for k, metric in no_encoder_metrics.items()}
+    no_encoder_stats = None
+    # if args.encoder != 'none':
+    #     no_encoder_stats = {k: metric.compute() for k, metric in no_encoder_metrics.items()}
+
     return metric_logger_stats, stats, no_encoder_stats
 
 
@@ -403,17 +419,18 @@ def evaluate_linear_classifiers(
             max_accuracy = metric["top-1"].item()
             best_classifier = classifier_string
 
-    for i, (classifier_string, metric) in enumerate(no_encoder_results_dict_temp.items()):
-        logger.info(f"{prefixstring} -- No Encoder Classifier: {classifier_string} * {metric}")
-        if (
-            best_classifier_on_val is None and metric["top-1"].item() > no_encoder_max_accuracy
-        ) or classifier_string == best_classifier_on_val:
-            no_encoder_max_accuracy = metric["top-1"].item()
-            no_encoder_best_classifier = classifier_string
+    results_dict["best_classifier"] = {"name": best_classifier, "accuracy": max_accuracy}
+    # if args.encoder != 'none':
+    #     for i, (classifier_string, metric) in enumerate(no_encoder_results_dict_temp.items()):
+    #         logger.info(f"{prefixstring} -- No Encoder Classifier: {classifier_string} * {metric}")
+    #         if (
+    #             best_classifier_on_val is None and metric["top-1"].item() > no_encoder_max_accuracy
+    #         ) or classifier_string == best_classifier_on_val:
+    #             no_encoder_max_accuracy = metric["top-1"].item()
+    #             no_encoder_best_classifier = classifier_string
 
-    # results_dict["best_classifier"] = {"name": best_classifier, "accuracy": max_accuracy}
-    results_dict["best_classifier"] = {"name": best_classifier, "accuracy": max_accuracy, 
-                                       "no_encoder_name": no_encoder_best_classifier, "no_encoder_acc": no_encoder_max_accuracy}
+    #     results_dict["best_classifier"] = {"name": best_classifier, "accuracy": max_accuracy, 
+    #                                        "no_encoder_name": no_encoder_best_classifier, "no_encoder_acc": no_encoder_max_accuracy}
 
     logger.info(f"best classifier: {results_dict['best_classifier']}")
 
@@ -424,7 +441,9 @@ def evaluate_linear_classifiers(
                 f.write(json.dumps({k: v}) + "\n")
             f.write("\n")
         
-    del results_dict_temp, no_encoder_results_dict_temp
+    del results_dict_temp
+    # if args.encoder != 'none':
+    #     del no_encoder_results_dict_temp
 
     return results_dict
 
@@ -577,6 +596,14 @@ def eval_linear(
     metric_logger = MetricLogger(delimiter="  ")
     header = "Training"
 
+    encoder = None
+    if args.encoder == 'unet':
+        encoder = feature_model.encoder.unet
+    elif args.encoder == 'unet2':
+        encoder = feature_model.encoder.unet2
+    elif args.encoder == 'linear':
+        encoder = feature_model.encoder.linear
+
     for data, labels in metric_logger.log_every(
         train_data_loader,
         500,
@@ -612,16 +639,17 @@ def eval_linear(
             torch.cuda.synchronize()
             metric_logger.update(loss=loss.item())
             metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-            logging.info("lr", optimizer.param_groups[0]["lr"])
+            logging.info(f'lr: {optimizer.param_groups[0]["lr"]}')
             # clear memory
             del fixations, features, outputs
             ram_usage = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
             logging.info(f"ram usage: {ram_usage}")
 
-            for name, param in feature_model.encoder.linear.named_parameters():
-                print(f"{name}: {param.requires_grad}, {param.grad}")
-                if param.grad:
-                    print(f"grad {param.grad.data}")
+            """Check weights and grads"""
+            if encoder is not None:
+                for name, param in encoder.named_parameters():
+                    print(f"{name}: {param.requires_grad}, {param.data}")
+                    print(f"grad {param.grad}")
 
         if iteration - start_iter > 5:
             if iteration % running_checkpoint_period == 0:
@@ -629,6 +657,17 @@ def eval_linear(
                 if distributed.is_main_process():
                     logger.info("Checkpointing running_checkpoint")
                     periodic_checkpointer.save("running_checkpoint_linear_eval", iteration=iteration)
+
+                    if encoder is not None:
+                        trained_weights = torch.tensor([], device=args.device)
+                        for name, param in encoder.named_parameters():
+                            print(name)
+                            print(param.data)
+                            p_1d = param.data.view(param.data.nelement())
+                            trained_weights = torch.cat((trained_weights, p_1d))
+                        print(f"trained weights shape {trained_weights.shape}")
+                        print(f"max min mean std: {torch.max(trained_weights), torch.min(trained_weights), torch.mean(trained_weights), torch.std(trained_weights)}")
+
                 torch.cuda.synchronize()
         periodic_checkpointer.step(iteration)
 
@@ -753,6 +792,8 @@ def run_eval_linear(
     if args.n_last_blocks > 1:
         n_last_blocks_list = [1, args.n_last_blocks]
         n_last_blocks = max(n_last_blocks_list)
+    if args.pretrained_classifier:
+        n_last_blocks_list = [args.n_last_blocks]
 
     autocast_ctx = partial(torch.cuda.amp.autocast, enabled=True, dtype=autocast_dtype)
     fixations = None
@@ -764,23 +805,29 @@ def run_eval_linear(
     encoder_model = EncoderModel(patch_size=args.patch_size, n_channels=1, n_classes=args.unet_classes, bilinear=args.unet_bilinear, 
                                  encoder=args.encoder, down_sampling=args.down_sampling)
     encoder_model = encoder_model.to(device=args.device)
+
+    optim_param_groups = []
     if args.encoder == 'unet':
         logging.info(f'Encoder:\n'
                     f'\t{encoder_model.unet.n_channels} input channels\n'
                     f'\t{encoder_model.unet.n_classes} output channels (classes)\n'
                     f'\t{"Bilinear" if encoder_model.unet.bilinear else "Transposed conv"} upscaling')
+        optim_param_groups.append({"params": encoder_model.unet.parameters(), "lr": args.encoder_lr})
     elif args.encoder == 'unet2':
         logging.info(f'Encoder:\n'
                     f'\t{encoder_model.unet2.n_channels} input channels\n'
                     f'\t{encoder_model.unet2.n_classes} output channels (classes)')
+        optim_param_groups.append({"params": encoder_model.unet2.parameters(), "lr": args.encoder_lr})
         if args.load_identity_unet:
             """Load saved identity unet2"""
             I_UNET2_PATH = r"/work/scratch/tnguyen/unet/identity_encoder/3/checkpoint_epoch10.pth"
             encoder_model.unet2.load_state_dict(torch.load(I_UNET2_PATH))
     elif args.encoder == 'linear':
         logging.info(f'Encoder: linear')
+        optim_param_groups.append({"params": encoder_model.linear.parameters(), "lr": args.encoder_lr})
     else:
         logging.info(f'Encoder: none')
+        optim_param_groups = []
 
     if args.fixation_top >= 1:
         feature_model = ModelWithIntermediateLayers(model, n_last_blocks, autocast_ctx)
@@ -818,13 +865,41 @@ def run_eval_linear(
         learning_rates,
         batch_size,
         training_num_classes,
+        optim_param_groups,
+        args.pretrained_classifier,
+        args.avgpool,
     )
     del fixations, sample_output
 
-    checkpoint_model = nn.Sequential(feature_model.encoder, linear_classifiers)
+    if args.pretrained_classifier:
+        classifier_ckpt = torch.load(args.pretrained_classifier_path)
+        saved_dict_string = f"classifiers_dict." + f"classifier_{args.n_last_blocks}_blocks_avgpool_{args.avgpool}_lr_{args.learning_rates[0]:.5f}".replace(".", "_")
+        print(f"saved_dict_string {saved_dict_string}")
+        saved_dict_list = [saved_dict_string + ".linear.weight", saved_dict_string + ".linear.bias"]
+        saved_data = {}
+        for key, value in classifier_ckpt['model'].items():
+            # print(key)
+            if key in saved_dict_list:
+                saved_data[key] = value
+        for name, param in linear_classifiers.module.named_parameters():
+            # print(name)
+            param.requires_grad = False
+            if name in saved_dict_list:
+                print(param.data)
+                param.data = saved_data[name]
+                print(f"---")
+                print(param.data)
+            else:
+                print(f"Could not find saved data for {name}")
+        linear_classifiers.eval()
+
+    if args.fixation_top >= 1:
+        checkpoint_model = linear_classifiers
+    else:
+        checkpoint_model = nn.Sequential(feature_model.encoder, linear_classifiers)
 
     optimizer = torch.optim.SGD(optim_param_groups, momentum=0.9, weight_decay=0)
-    logging.info("optimizer", optimizer)
+    logging.info(f"optimizer: {optimizer}")
     max_iter = epochs * epoch_length
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, max_iter, eta_min=0)
     checkpointer = Checkpointer(checkpoint_model, output_dir, optimizer=optimizer, scheduler=scheduler)
@@ -883,6 +958,7 @@ def run_eval_linear(
             val_class_mapping=val_class_mapping,
             classifier_fpath=classifier_fpath,
         )
+        torch.cuda.empty_cache()
         gc.collect()
         ram_usage = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
         print(f"ram usage: {ram_usage}")
@@ -917,7 +993,7 @@ def main(args):
 
     for p in model.parameters():
         p.requires_grad = False
-    print(f"grad mode: {args.grad_mode}. Use model.eval(): {args.no_eval}")
+    print(f"grad mode: {args.grad_mode}. Use no_eval: {args.no_eval}")
     if not args.no_eval:
         model.eval()
     model.to(device)

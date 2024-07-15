@@ -100,19 +100,41 @@ if __name__ == '__main__':
                 f'\t{model.n_classes} output channels (classes)\n'
                 f'\t{"Bilinear" if model.bilinear else "Transposed conv"} upscaling')
 
-    for image, label in val_dataset:
-        break
-    print(f"Image shape, max, and min {image.shape, image.max(), image.min()}")
     
-    model.load_state_dict(ckpt)
-    model.eval()
-    for p in model.parameters():
-        p.requires_grad = False
+    trained_weights = torch.tensor([], device=device)
+    for name, p in model.named_parameters():
+        print(f"{name}: {p.requires_grad}, {p.grad}")
+        p_1d = p.view(p.nelement())
+        trained_weights = torch.cat((trained_weights, p_1d))
+    print(f"trained weights shape {trained_weights.shape}")
+    print(f"max min mean std: {torch.max(trained_weights), torch.min(trained_weights), torch.mean(trained_weights), torch.std(trained_weights)}")
+
+
+    # model.load_state_dict(ckpt)
+    # model.eval()
+    # for p in model.parameters():
+    #     p.requires_grad = False
         
-    to_grayscale = pth_transforms.Grayscale(num_output_channels=1)
-    image = to_grayscale(image.to(device))
-    torchvision.utils.save_image(image, r"/home/students/tnguyen/masterthesis/unet/identity/original_image.jpg")
-    image = image.unsqueeze(0).cuda()
-    output = model(image)
-    # output = encoder_model(image)
-    torchvision.utils.save_image(output[0], r"/home/students/tnguyen/masterthesis/unet/identity/after_i_unet_image.jpg")
+    # to_grayscale = pth_transforms.Grayscale(num_output_channels=1)
+    
+    # transform = pth_transforms.Compose([
+    #     pth_transforms.Resize((14, 14)),
+    #     # pth_transforms.ToTensor(),
+    #     # pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    # ])
+
+    # for i, (image, label) in enumerate(val_dataset):
+    #     if i > 5:
+    #         break
+    #     else:
+    #         print(f"Image shape, max, and min {image.shape, image.max(), image.min()}")
+    
+    #         image = to_grayscale(image.to(device))
+    #         # image = transform(image.to(device))
+    #         torchvision.utils.save_image(image, r"/home/students/tnguyen/masterthesis/unet/identity/"+str(i)+r"original_image.jpg")
+    #         # torchvision.utils.save_image(image, r"/home/students/tnguyen/masterthesis/unet/identity/resized_"+str(i)+r"original_image.jpg")
+    #         image = image.unsqueeze(0).cuda()
+    #         output = model(image)
+    #         # output = encoder_model(image)
+    #         torchvision.utils.save_image(output[0], r"/home/students/tnguyen/masterthesis/unet/identity/"+str(i)+r"after_i_unet_image.jpg")
+    #         # torchvision.utils.save_image(output[0], r"/home/students/tnguyen/masterthesis/unet/identity/resized_"+str(i)+r"after_i_unet_image.jpg")

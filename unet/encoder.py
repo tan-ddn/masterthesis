@@ -78,8 +78,13 @@ def down_sampled_image2percept(img, desired_size, decoder, chunk_length=64):
 
     # take notes of the max of the patch
     patch_max = torch.max(img)
-    if patch_max > 0.0:
-        percept = (percept - percept.min())/(percept.max() - percept.min())*patch_max
+    if (patch_max > 0.0):
+        max, min, mean = percept.max(), percept.min(), percept.mean()
+        if abs(max - min) >= 1e-3:
+            percept = (percept - min) / (max - min) * patch_max
+        else:
+            if mean != 0:
+                percept = percept / mean * patch_max
 
     percept = percept.unsqueeze(1)
     # print(f"percept shape {percept.shape}")
@@ -87,6 +92,11 @@ def down_sampled_image2percept(img, desired_size, decoder, chunk_length=64):
     """Resize percept back to desired shape"""
     percept = F.interpolate(percept, size=(desired_size, desired_size), mode='nearest-exact')
     # print(f"percept shape {percept.shape}")
+
+    """Scale values back to reasonable range"""
+    print(f"percept max {percept.max()}")
+    mean, std = torch.mean(percept), torch.std(percept)
+    percept = (percept - mean) / std 
 
     del img
 
@@ -166,12 +176,12 @@ class EncoderModel(nn.Module):
         self.to_grayscale_for_p2p = pth_transforms.Grayscale(num_output_channels=n_channels)
     
     def forward(self, x):
-        x = self.to_grayscale_for_p2p(x)
-        B, C, H, W = x.shape
-
         if self.encoder == 'none':  # if no encoder, no need to do anything
             return x
         
+        x = self.to_grayscale_for_p2p(x)
+        B, C, H, W = x.shape
+
         if not self.down_sampling:  # patchify the image into smaller patches if the image is not down sampled yet
             x = pypatchify.patchify_to_batches(x, (C, self.patch_size, self.patch_size), batch_dim=0)
         # print(f'x shape {x.shape}')

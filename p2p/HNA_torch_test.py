@@ -6,6 +6,7 @@ import cv2
 import pypatchify
 import torch.nn.functional as F
 
+from torchvision.transforms import v2
 from torch.profiler import profile, record_function, ProfilerActivity
 from sklearn.preprocessing import minmax_scale
 from pulse2percept.models import AxonMapModel
@@ -74,14 +75,27 @@ for p in decoder2.parameters():
 decoder2.eval()
 
 img = cv2.imread('/home/students/tnguyen/masterthesis/plots/437_1420/train/n03026506/n03026506_2749_stim.jpg', 0)
-img = np.expand_dims(np.expand_dims(img, axis=2), axis=0)
-print(img.shape, np.max(img), np.min(img))
+# img = np.expand_dims(np.expand_dims(img, axis=2), axis=0)
+# print(img.shape, np.max(img), np.min(img))
 
-patches = pypatchify.patchify_to_batches(torch.tensor(img, dtype=torch.float, device=device), (p2p_patch_size, p2p_patch_size, 1), batch_dim=0)
-# patches /= 255.0
-print(patches.shape, torch.max(patches), torch.min(patches))
+# patches = pypatchify.patchify_to_batches(torch.tensor(img, dtype=torch.float, device=device), (p2p_patch_size, p2p_patch_size, 1), batch_dim=0)
+# # patches /= 255.0
+# print(patches.shape, torch.max(patches), torch.min(patches))
 
-patches = torch.flatten(patches, start_dim=1)
+# patches = torch.flatten(patches, start_dim=1)
+
+"""Downsampling image"""
+transforms_list = [
+    v2.Resize((14, 14), interpolation=v2.InterpolationMode.BICUBIC),
+    v2.Grayscale(num_output_channels=1),
+    ]
+transform = v2.Compose(transforms_list)
+img = transform(torch.tensor(np.expand_dims(img, axis=0), dtype=torch.float, device=device))
+print(f"img shape {img.shape}")
+saving_file_path = f'/home/students/tnguyen/masterthesis/plots/{rho}_{axlambda}/train/n03026506/original_downsampled_img.jpg'
+cv2.imwrite(saving_file_path, np.tile(img.permute(1, 2, 0).cpu().detach().numpy(), (1, 1, 3)))
+patches = torch.flatten(img, start_dim=1)
+""""""
 
 # phis = get_patient_params(p2pmodel, patches)
 # print(phis.shape)
@@ -152,7 +166,7 @@ percept = torch.zeros((patches.shape[0], crop_size, crop_size), device=device)
 before_decoder2 = time.time()
 with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True) as prof:
     with record_function("model_inference"):
-        percept = decoder2(patches)[:, crop_start:crop_end, crop_start:crop_end]
+        percept = decoder2(patches)[:, crop_start+1:crop_end+1, crop_start+1:crop_end+1]
 
         # take notes of the max of the patch
         patch_max = torch.max(patches) #* 255
@@ -161,16 +175,17 @@ with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_m
 
         percept = percept.unsqueeze(1)
         print(percept.shape)
-        percept = pypatchify.unpatchify_from_batches(percept, (1, 16*crop_size, 16*crop_size), batch_dim=0)
+        # percept = pypatchify.unpatchify_from_batches(percept, (1, 16*crop_size, 16*crop_size), batch_dim=0)
 
 """Resize percept back to desired shape"""
 out = F.interpolate(percept, size=(img.shape[1], img.shape[2]))
 
-print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
-print(f"Decoder 2 time elapsed: {time.time() - before_decoder2}")
+# print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
+# print(f"Decoder 2 time elapsed: {time.time() - before_decoder2}")
 
 # print(f"Time elapsed: {end - start}")  # pytorch profiler
 
 # saving_file_path = f'/home/students/tnguyen/masterthesis/plots/{rho}_{axlambda}/train/n03026506/AxonMap_torch_test_resized_{xystep}.jpg'
-# print(saving_file_path)
-# cv2.imwrite(saving_file_path, np.tile(out.permute(0, 2, 3, 1).cpu().detach().numpy(), (1, 1, 1, 3)).squeeze())
+saving_file_path = f'/home/students/tnguyen/masterthesis/plots/{rho}_{axlambda}/train/n03026506/AxonMap_torch_test_downsampled_{xystep}.jpg'
+print(saving_file_path)
+cv2.imwrite(saving_file_path, np.tile(out.permute(0, 2, 3, 1).cpu().detach().numpy(), (1, 1, 1, 3)).squeeze())
